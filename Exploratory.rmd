@@ -22,6 +22,7 @@ graphics.off()
 # Load necessary library
 ```{r}
 library(dplyr)
+library(ggplot2)
 ```
 
 # Read from ECOM data source
@@ -86,6 +87,40 @@ data_customer <- data_customer %>%
                   mutate(qty_payments = n(), total_payment = sum(payment_value)) %>% 
                   select(-payment_value) %>% 
                   distinct()
+```
+
+```{r}
+data_customer$order_purchase_timestamp <- as.POSIXct(data_customer$order_purchase_timestamp, format = "%Y-%m-%d %H:%M:%S")
+data_customer$order_delivered_customer_date <- as.POSIXct(data_customer$order_delivered_customer_date, format = "%Y-%m-%d %H:%M:%S")
+data_customer$purchase_weekday <- weekdays(data_customer$order_purchase_timestamp)
+data_customer$delivered_weekday <- weekdays(data_customer$order_purchase_timestamp)
+```
+
+```{r}
+orders_per_weekday <- data_customer %>%
+                      group_by(purchase_weekday) %>%
+                      summarise(number_of_orders = n())
+
+# Define a color palette for weekdays
+weekday_colors <- c("Sunday" = "#FF9999",   # Light red
+                    "Monday" = "#FFCC99",  # Light orange
+                    "Tuesday" = "#FFFF99", # Light yellow
+                    "Wednesday" = "#CCFF99", # Light green
+                    "Thursday" = "#99CCFF",  # Light blue
+                    "Friday" = "#CC99FF",    # Light purple
+                    "Saturday" = "#FF99FF")  # Light pink
+
+# Plot the number of orders per weekday with different colors
+ggplot(data_customer, aes(x = purchase_weekday, fill = purchase_weekday)) +
+  geom_bar() +
+  scale_fill_manual(values = weekday_colors) +
+  labs(title = "Number of Orders per Weekday",
+       x = "Weekday",
+       y = "Number of Orders") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(face = "bold")) +
+  geom_hline(yintercept = mean(orders_per_weekday$number_of_orders), linetype = "dashed", color = "black") +
+  geom_text(aes(x = 4, y = mean(orders_per_weekday$number_of_orders)+400, label = "Mean"), color = "black", fontface = "bold")
 ```
 
 ```{r}
