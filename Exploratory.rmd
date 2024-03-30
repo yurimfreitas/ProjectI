@@ -1,0 +1,74 @@
+---
+title: "Project I"
+author: "Yuri Freitas"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Exploratory analysis
+#   - dataset: ECOM
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Clean lists
+```{r}
+rm(list = ls())
+graphics.off()
+```
+
+# Load necessary library
+```{r}
+library(dplyr)
+```
+
+# Read from ECOM data source
+```{r}
+order <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/fct_orders.csv")
+customer <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/dim_customers.csv")
+order_item <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/fct_order_items.csv")
+product <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/Dim_products.csv")
+payment <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/dim_payments.csv")
+```
+
+# Counts in the tables
+```{r}
+order %>% select(order_id) %>% summarize(count = n())
+order_item %>% select(order_id, order_item_id) %>% summarise(count = n())
+customer %>% summarize(count = n())
+product %>% summarize(count = n())
+payment %>% summarize(count = n())
+```
+
+```{r}
+# View(order)
+# View(order_item)
+# View(product)
+# View(customer)
+# View(payment)
+```
+
+# Getting only interesting fields for analysis
+```{r}
+order <- order %>% select(order_id, customer_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
+order_item <- order_item %>% select(order_id, order_item_id, product_id, price, freight_value) 
+order_order_item <- inner_join(order, order_item, by = "order_id")
+```
+
+# Checking for 1 order in specific
+```{r}
+View(order_order_item %>% filter(order_id=='001ab0a7578dd66cd4b0a71f5b6e1e41'))
+```
+
+```{r}
+data_customer <- order_order_item %>% select(customer_id, order_id) %>% group_by(customer_id) %>% summarize(order_count = n_distinct(order_id))
+```
+
+```{r}
+View(order %>% group_by(customer_id) %>% filter(n() > 1))
+```
+
+```
+
