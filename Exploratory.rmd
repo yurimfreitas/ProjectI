@@ -26,20 +26,20 @@ library(dplyr)
 
 # Read from ECOM data source
 ```{r}
-order <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/fct_orders.csv")
-customer <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/dim_customers.csv")
-order_item <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/fct_order_items.csv")
-product <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/Dim_products.csv")
-payment <- read.csv("C:/Users/yfreitas/Documents/RSamples/Project I/dataset_projeto1_20240323/dim_payments.csv")
+order <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/fct_orders.csv")
+customer <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/dim_customers.csv")
+order_item <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/fct_order_items.csv")
+product <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/Dim_products.csv")
+payment <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/dim_payments.csv")
 ```
 
 # Counts in the tables
 ```{r}
-order %>% select(order_id) %>% summarize(count = n())
-order_item %>% select(order_id, order_item_id) %>% summarise(count = n())
-customer %>% summarize(count = n())
-product %>% summarize(count = n())
-payment %>% summarize(count = n())
+summary(order)
+summary(order_item)
+summary(customer)
+summary(product)
+summary(payment)
 ```
 
 ```{r}
@@ -59,16 +59,36 @@ order_order_item <- inner_join(order, order_item, by = "order_id")
 
 # Checking for 1 order in specific
 ```{r}
-View(order_order_item %>% filter(order_id=='001ab0a7578dd66cd4b0a71f5b6e1e41'))
+#order_id for check payments = '009ac365164f8e06f59d18a08045f6c4'
+#cutomer_unique_id with many orders= '004288347e5e88a27ded2bb23747066c'
+#order_id with many itens order_id=='001ab0a7578dd66cd4b0a71f5b6e1e41'))
+```
+
+# Create a data_customer df with all customers and its orders
+```{r}
+data_customer <- inner_join(order, customer, by = "customer_id") %>% select(customer_unique_id, order_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
+```
+
+# Enriching the data_customer with number of itens in each order, total price, total freight value and price + freight
+```{r}
+data_customer <- data_customer %>% inner_join(select(order_order_item, order_id, price, freight_value), by = "order_id") %>% 
+                  group_by(customer_unique_id, order_id) %>% mutate(order_itens = n(), total_price = sum(price), total_freight_value = sum(freight_value)) %>% 
+                  select(-price, -freight_value) %>% 
+                  distinct()
+data_customer$total_price_freight <- data_customer$total_price + data_customer$total_freight_value
+```
+
+# Enriching the data with total payment from payment and also the number of payments, sometimes it has many payments for the same order (vouher, credit card) etc. 
+```{r}
+data_customer <- data_customer %>% 
+                  inner_join(select(payment, order_id, payment_value), by = "order_id") %>% 
+                  group_by(order_id) %>% 
+                  mutate(qty_payments = n(), total_payment = sum(payment_value)) %>% 
+                  select(-payment_value) %>% 
+                  distinct()
 ```
 
 ```{r}
-data_customer <- order_order_item %>% select(customer_id, order_id) %>% group_by(customer_id) %>% summarize(order_count = n_distinct(order_id))
-```
-
-```{r}
-View(order %>% group_by(customer_id) %>% filter(n() > 1))
-```
-
+View(data_customer)
 ```
 
