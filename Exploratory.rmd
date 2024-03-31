@@ -67,7 +67,7 @@ order_order_item <- inner_join(order, order_item, by = "order_id")
 
 # Create a data_customer df with all customers and its orders
 ```{r}
-data_customer <- inner_join(order, customer, by = "customer_id") %>% select(customer_unique_id, order_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
+data_customer <- inner_join(order, customer, by = "customer_id") %>% select(customer_unique_id, customer_city, customer_state, order_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
 ```
 
 # Enriching the data_customer with number of itens in each order, total price, total freight value and price + freight
@@ -89,17 +89,19 @@ data_customer <- data_customer %>%
                   distinct()
 ```
 
+# Cast chr to datetimestamp and get the weekday for purchase and delivered
 ```{r}
 data_customer$order_purchase_timestamp <- as.POSIXct(data_customer$order_purchase_timestamp, format = "%Y-%m-%d %H:%M:%S")
 data_customer$order_delivered_customer_date <- as.POSIXct(data_customer$order_delivered_customer_date, format = "%Y-%m-%d %H:%M:%S")
 data_customer$purchase_weekday <- weekdays(data_customer$order_purchase_timestamp)
-data_customer$delivered_weekday <- weekdays(data_customer$order_purchase_timestamp)
+data_customer$delivered_weekday <- weekdays(data_customer$order_delivered_customer_date)
 ```
 
+# Orders per weekday
 ```{r}
 orders_per_weekday <- data_customer %>%
                       group_by(purchase_weekday) %>%
-                      summarise(number_of_orders = n())
+                      summarise(number_of_orders_weekday = n())
 
 # Define a color palette for weekdays
 weekday_colors <- c("Sunday" = "#FF9999",   # Light red
@@ -119,8 +121,29 @@ ggplot(data_customer, aes(x = purchase_weekday, fill = purchase_weekday)) +
        y = "Number of Orders") +
   theme_minimal() +
   theme(axis.text.x = element_text(face = "bold")) +
-  geom_hline(yintercept = mean(orders_per_weekday$number_of_orders), linetype = "dashed", color = "black") +
-  geom_text(aes(x = 4, y = mean(orders_per_weekday$number_of_orders)+400, label = "Mean"), color = "black", fontface = "bold")
+  geom_hline(yintercept = mean(orders_per_weekday$number_of_orders_weekday), linetype = "dashed", color = "black") +
+  geom_text(aes(x = 4, y = mean(orders_per_weekday$number_of_orders_weekday)+400, label = "Mean"), color = "black", fontface = "bold")
+```
+
+# Order per Weekday
+```{r}
+orders_per_city <- data_customer %>%
+                   group_by(customer_city) %>%
+                   summarise(number_of_orders_city = n())
+
+# Select only the top 7 cities
+top_7_cities <- orders_per_city %>%
+                arrange(desc(number_of_orders_city)) %>%
+                head(7)
+
+# Plot the number of orders per weekday with different colors
+ggplot(top_7_cities, aes(x = reorder(customer_city, -number_of_orders_city), y = number_of_orders_city, fill = customer_city)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Orders per City (Top 7)",
+       x = "City",
+       y = "Number of Orders") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(face = "bold"))
 ```
 
 ```{r}
