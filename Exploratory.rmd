@@ -150,3 +150,24 @@ ggplot(top_7_cities, aes(x = reorder(customer_city, -number_of_orders_city), y =
 View(data_customer)
 ```
 
+# Customer Segmentation: RFM (Recency, Frequency, Monetary)
+# Low-Value: Less active customers — customers who rarely make purchases and generate low revenues
+# Mid-Value: Those who use the platform quite frequently and generate moderate revenues
+# High-Value: Very active customers, who spend very often and spend more than any other customers
+# Recency
+```{r}
+data_customer_segmentation <- data_customer %>%
+                              group_by(customer_unique_id) %>%
+                              summarise(max_purchase = max(order_purchase_timestamp)) %>%
+                              select(customer_unique_id, max_purchase)
+data_customer_segmentation$recency <- as.numeric(difftime(Sys.Date(), data_customer_segmentation$max_purchase, units = "days"))
+```
+
+# Distribution of the recency
+```{r}
+ggplot(data_customer_segmentation, aes(x = recency)) +
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black") +
+  labs(title = "Recency Histogram",
+       x = "Recency (Days)",
+       y = "Count")
+```
