@@ -147,6 +147,7 @@ ggplot(top_7_cities, aes(x = reorder(customer_city, -number_of_orders_city), y =
 ```
 
 ```{r}
+data_customer <- na.omit(data_customer)
 View(data_customer)
 ```
 
@@ -156,7 +157,6 @@ View(data_customer)
 # High-Value: Very active customers, who spend very often and spend more than any other customers
 # Recency
 ```{r}
-data_customer <- na.omit(data_customer)
 data_customer_segmentation <- data_customer %>%
                               group_by(customer_unique_id) %>%
                               summarise(max_purchase = max(order_purchase_timestamp)) %>%
@@ -237,6 +237,7 @@ plot(recency ~ 1,
      ylab = "Recency (standardized)")
 ```
 
+# Assigne the cluster number to data_customer_segmentation and show grouped by recency_cluster the numbers
 ```{r}
 customer_segmentation_std$cluster <- fit.kmeans$cluster
 data_customer_segmentation$recency_cluster <- customer_segmentation_std$cluster
@@ -249,6 +250,7 @@ counts <- data_customer_segmentation %>%
 counts
 ```
 
+# Plot a bar chart showing the cluster numbers
 ```{r}
 ggplot(data_customer_segmentation, aes(x = recency_cluster)) +
   geom_bar(fill = "skyblue", color = "black") +
