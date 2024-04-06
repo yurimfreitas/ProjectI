@@ -1,0 +1,159 @@
+---
+title: "Project I"
+author: "Yuri Freitas"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Dataset: ECOM
+# Data understanding: Profiling -> Data quality
+# Exploratory data analysis -> Variable kind, 
+#                              Distributions (histogram, box plot), have a unique table (view)
+#                              Basic KPI: Sells, 
+#                                         quantity, 
+#                                         count status
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Clean lists
+```{r}
+rm(list = ls())
+graphics.off()
+```
+
+# Load necessary library
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+# Read from ECOM data source
+```{r}
+order <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/fct_orders.csv")
+customer <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/dim_customers.csv")
+order_item <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/fct_order_items.csv")
+product <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/Dim_products.csv")
+payment <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/dim_payments.csv")
+```
+
+# Counts in the tables
+```{r}
+summary(order)
+summary(order_item)
+summary(customer)
+summary(product)
+summary(payment)
+```
+
+```{r}
+# View(order)
+# View(order_item)
+# View(product)
+# View(customer)
+# View(payment)
+```
+
+# Getting only interesting fields for analysis
+```{r}
+order <- order %>% select(order_id, customer_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
+order_item <- order_item %>% select(order_id, order_item_id, product_id, price, freight_value) 
+order_order_item <- inner_join(order, order_item, by = "order_id")
+```
+
+# Some keys to check the data anytime
+```{r}
+#order_id for check payments = '009ac365164f8e06f59d18a08045f6c4'
+#cutomer_unique_id with many orders= '004288347e5e88a27ded2bb23747066c'
+#order_id with many itens order_id=='001ab0a7578dd66cd4b0a71f5b6e1e41'
+#first order to customer_unique_id = '2f64e403852e6893ae37485d5fcacdaf'
+#last order to customer_unique_id = '24ac2b4327e25baf39f2119e4228976a'
+```
+
+# Create a data_customer df with all customers and its orders
+```{r}
+data_customer <- inner_join(order, customer, by = "customer_id") %>% select(customer_unique_id, customer_city, customer_state, order_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
+```
+
+# Enriching the data_customer with number of itens in each order, total price, total freight value and price + freight
+```{r}
+data_customer <- data_customer %>% inner_join(select(order_order_item, order_id, price, freight_value), by = "order_id") %>% 
+                  group_by(customer_unique_id, order_id) %>% mutate(order_itens = n(), total_price = sum(price), total_freight_value = sum(freight_value)) %>% 
+                  select(-price, -freight_value) %>% 
+                  distinct()
+data_customer$total_price_freight <- data_customer$total_price + data_customer$total_freight_value
+```
+
+# Enriching the data with total payment from payment and also the number of payments, sometimes it has many payments for the same order (vouher, credit card) etc. 
+```{r}
+data_customer <- data_customer %>% 
+                  inner_join(select(payment, order_id, payment_value), by = "order_id") %>% 
+                  group_by(order_id) %>% 
+                  mutate(qty_payments = n(), total_payment = sum(payment_value)) %>% 
+                  select(-payment_value) %>% 
+                  distinct()
+```
+
+# Cast chr to datetimestamp and get the weekday for purchase and delivered
+```{r}
+data_customer$order_purchase_timestamp <- as.POSIXct(data_customer$order_purchase_timestamp, format = "%Y-%m-%d %H:%M:%S")
+data_customer$order_delivered_customer_date <- as.POSIXct(data_customer$order_delivered_customer_date, format = "%Y-%m-%d %H:%M:%S")
+data_customer$purchase_weekday <- weekdays(data_customer$order_purchase_timestamp)
+data_customer$delivered_weekday <- weekdays(data_customer$order_delivered_customer_date)
+```
+
+# Orders per weekday
+```{r}
+orders_per_weekday <- data_customer %>%
+                      group_by(purchase_weekday) %>%
+                      summarise(number_of_orders_weekday = n())
+
+# Define a color palette for weekdays
+weekday_colors <- c("Sunday" = "#FF9999",   # Light red
+                    "Monday" = "#FFCC99",  # Light orange
+                    "Tuesday" = "#FFFF99", # Light yellow
+                    "Wednesday" = "#CCFF99", # Light green
+                    "Thursday" = "#99CCFF",  # Light blue
+                    "Friday" = "#CC99FF",    # Light purple
+                    "Saturday" = "#FF99FF")  # Light pink
+
+# Plot the number of orders per weekday with different colors
+ggplot(data_customer, aes(x = purchase_weekday, fill = purchase_weekday)) +
+  geom_bar() +
+  scale_fill_manual(values = weekday_colors) +
+  labs(title = "Number of Orders per Weekday",
+       x = "Weekday",
+       y = "Number of Orders") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(face = "bold")) +
+  geom_hline(yintercept = mean(orders_per_weekday$number_of_orders_weekday), linetype = "dashed", color = "black") +
+  geom_text(aes(x = 4, y = mean(orders_per_weekday$number_of_orders_weekday)+400, label = "Mean"), color = "black", fontface = "bold")
+```
+
+# Order per Weekday
+```{r}
+orders_per_city <- data_customer %>%
+                   group_by(customer_city) %>%
+                   summarise(number_of_orders_city = n())
+
+# Select only the top 7 cities
+top_7_cities <- orders_per_city %>%
+                arrange(desc(number_of_orders_city)) %>%
+                head(7)
+
+# Plot the number of orders per weekday with different colors
+ggplot(top_7_cities, aes(x = reorder(customer_city, -number_of_orders_city), y = number_of_orders_city, fill = customer_city)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Orders per City (Top 7)",
+       x = "City",
+       y = "Number of Orders") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(face = "bold"))
+```
+
+```{r}
+data_customer <- na.omit(data_customer)
+View(data_customer)
+```

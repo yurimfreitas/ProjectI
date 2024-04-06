@@ -1,0 +1,30 @@
+# Customer Segmentation: RFM (Recency, Frequency, Monetary)
+# Low-Value: Less active customers — customers who rarely make purchases and generate low revenues
+# Mid-Value: Those who use the platform quite frequently and generate moderate revenues
+# High-Value: Very active customers, who spend very often and spend more than any other customers
+
+# Frequency
+# We see that 90% of customers have only 1 order, so, in this case I am think if it worth to use k-means to create cluster
+# For this case I think we could only spread in 2 cluster, the ones with 1 order and other with more orders
+```{r}
+counts <- data_customer_segmentation %>%
+          group_by(count_orders) %>%
+          summarise(count = n())
+
+counts
+```
+
+# Simple distribution between cluster 1 and 2
+```{r}
+data_customer_segmentation$frequency_cluster <- data_customer_segmentation %>% 
+                                                mutate(frequency_cluster = ifelse(count_orders == 1, 1, 2)) %>%
+                                                select(frequency_cluster)
+```
+
+```{r}
+counts <- data_customer_segmentation %>%
+          group_by(frequency_cluster) %>%
+          summarise(count = n())
+
+counts
+```
