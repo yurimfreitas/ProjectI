@@ -9,8 +9,14 @@ output:
 ---
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Exploratory analysis
-#   - dataset: ECOM
+# Dataset: ECOM
+# Data understanding: Profiling -> Data quality
+# Exploratory data analysis -> Variable kind, 
+#                              Distributions (histogram, box plot), have a unique table (view)
+#                              Basic KPI: Sells, 
+#                                         quantity, 
+#                                         count status
+#
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Clean lists
@@ -157,10 +163,10 @@ View(data_customer)
 # High-Value: Very active customers, who spend very often and spend more than any other customers
 # Recency
 ```{r}
-data_customer_segmentation <- data_customer %>%
+data_customer_segmentation <-data_customer %>%
                               group_by(customer_unique_id) %>%
-                              summarise(max_purchase = max(order_purchase_timestamp)) %>%
-                              select(customer_unique_id, max_purchase)
+                              summarise(count_orders = n(), max_purchase = max(order_purchase_timestamp)) %>%
+                              select(customer_unique_id, count_orders, max_purchase)
 data_customer_segmentation$recency <- as.numeric(difftime(Sys.Date(), data_customer_segmentation$max_purchase, units = "days"))
 ```
 
@@ -176,7 +182,7 @@ ggplot(data_customer_segmentation, aes(x = recency)) +
 # To assign a recency score, we’ll be using KMeans clustering. But before that, as with other KMeans projects, we need to know how many clusters we need.
 # Also, we'll use only use numeric features
 ```{r}
-customer_segmentation_num <- data_customer_segmentation[,3]
+customer_segmentation_num <- data_customer_segmentation[,4]
 head(customer_segmentation_num)
 ```
 
@@ -220,8 +226,8 @@ fit.kmeans <- kmeans(customer_segmentation_std,
 print(fit.kmeans)
 ```
 
-# Note that "Cluster means" are the centers of each cluster
-```{r}
+# Note that "Cluster means" are the centers of each cluster ->
+```{r} 
 fit.kmeans$centers
 ```
 
@@ -257,4 +263,29 @@ ggplot(data_customer_segmentation, aes(x = recency_cluster)) +
   labs(title = "Counts of Recency Clusters",
        x = "Recency Cluster",
        y = "Count")
+```
+
+# Frequency
+# We see that 90% of customers have only 1 order, so, in this case I am think if it worth to use k-means to create cluster
+# For this case I think we could only spread in 2 cluster, the ones with 1 order and other with more orders
+```{r}
+counts <- data_customer_segmentation %>%
+          group_by(count_orders) %>%
+          summarise(count = n())
+
+counts
+```
+
+# Simple distribution between cluster 1 and 2
+```{r}
+data_customer_segmentation <- data_customer_segmentation %>%
+                              mutate(frequency_cluster = ifelse(count_orders == 1, 1, 2))
+```
+
+```{r}
+counts <- data_customer_segmentation %>%
+          group_by(frequency_cluster) %>%
+          summarise(count = n())
+
+counts
 ```
