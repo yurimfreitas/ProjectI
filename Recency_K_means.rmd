@@ -9,9 +9,9 @@
 ```{r}
 data_customer_segmentation <- data_customer %>%
                               group_by(customer_unique_id) %>%
-                              summarise(count_orders = n(), max_purchase = max(order_purchase_timestamp)) %>%
+                              summarise(count_orders = n(), max_purchase = max(order_purchase_timestamp), total_paid = sum(total_payment)) %>%
                               arrange(max_purchase) %>%
-                              select(customer_unique_id, count_orders, max_purchase)
+                              select(customer_unique_id, total_paid, count_orders, max_purchase)
 data_customer_segmentation$recency <- as.numeric(difftime(Sys.Date(), data_customer_segmentation$max_purchase, units = "days"))
 ```
 
@@ -27,33 +27,33 @@ ggplot(data_customer_segmentation, aes(x = recency)) +
 # To assign a recency score, we’ll be using KMeans clustering. But before that, as with other KMeans projects, we need to know how many clusters we need.
 # Also, we'll use only use numeric features
 ```{r}
-customer_segmentation_num <- data_customer_segmentation[,4]
-head(customer_segmentation_num)
+customer_segmentation_recency_num <- data_customer_segmentation[,5]
+head(customer_segmentation_recency_num)
 ```
 
 # As K-means calculates distances, we'll standardize the numerical variables
 ```{r}
-customer_segmentation_std <- as.data.frame(scale(customer_segmentation_num))
-head(customer_segmentation_std)
+customer_segmentation_recency_std <- as.data.frame(scale(customer_segmentation_recency_num))
+head(customer_segmentation_recency_std)
 ```
 
 # Note that means=0 and sd=1 for all variables after standardization
 ```{r}
-summary(customer_segmentation_std)
-sapply(customer_segmentation_std, sd)
+summary(customer_segmentation_recency_std)
+sapply(customer_segmentation_recency_std, sd)
 ```
 
 # Determine Number of Clusters --------------------------------------------
 ```{r}
 # Get just a sample of data, these algorithms are heavy
-sampled_data_std <- customer_segmentation_std %>%
-                    sample_n(10000, replace = FALSE)
+sampled_data_recency_std <- customer_segmentation_recency_std %>%
+                            sample_n(10000, replace = FALSE)
 
 # "Elbow method", for total within-cluster sum of square
-factoextra::fviz_nbclust(sampled_data_std, kmeans, method = "wss")
+factoextra::fviz_nbclust(sampled_data_recency_std, kmeans, method = "wss")
 
 # "Silhouette-score method", for how similar a data point is within-cluster
-factoextra::fviz_nbclust(sampled_data_std, kmeans, method = "silhouette")
+factoextra::fviz_nbclust(sampled_data_recency_std, kmeans, method = "silhouette")
 ```
 
 # Define number of clusters
@@ -65,7 +65,7 @@ k_clusters <- 4
 ```{r}
 # Perform k-means clustering
 set.seed(811)
-fit.kmeans <- kmeans(customer_segmentation_std,
+fit.kmeans <- kmeans(customer_segmentation_recency_std,
                      centers = k_clusters,
                      nstart = 20, # how many random sets should be chosen
                      iter.max = 100)
@@ -82,10 +82,10 @@ fit.kmeans$centers
 # Create a mapping from the original cluster centers to the ordered centers
 cluster_mapping <- match(fit.kmeans$centers, rev(sort(fit.kmeans$centers)))
 # Append cluster labels to the standardized data
-customer_segmentation_std$cluster <- cluster_mapping[fit.kmeans$cluster]
+customer_segmentation_recency_std$cluster <- cluster_mapping[fit.kmeans$cluster]
 # Append cluster and recency to data_customer_segmentation
-data_customer_segmentation$recency_cluster <- customer_segmentation_std$cluster
-data_customer_segmentation$recency_std <- customer_segmentation_std$recency
+data_customer_segmentation$recency_cluster <- customer_segmentation_recency_std$cluster
+data_customer_segmentation$recency_std <- customer_segmentation_recency_std$recency
 
 counts <- data_customer_segmentation %>%
           group_by(recency_cluster) %>%
