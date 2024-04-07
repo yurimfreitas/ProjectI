@@ -109,3 +109,55 @@ ggplot(data_customer_segmentation, aes(x = monetary_cluster)) +
        x = "Monetary Cluster",
        y = "Count")
 ```
+
+# Overall Cluster - Going to merge all clusters (RFM) and create the Overall
+```{r}
+data_customer_segmentation$overall_score <- data_customer_segmentation$recency_cluster+
+                                            data_customer_segmentation$frequency_cluster+
+                                            data_customer_segmentation$monetary_cluster
+
+data_customer_segmentation %>%  group_by(overall_score) %>%  summarise(count = n())
+```
+
+# Customer Segmentation
+# 3–4: Low-Value
+# 5–6: Mid-Value
+# >=7: High-Value
+```{r}
+# Create a new column customer_segmentation based on overall_score
+data_customer_segmentation <- data_customer_segmentation %>%
+  mutate(customer_segmentation = case_when(
+    overall_score >= 7 ~ "High-Value",
+    overall_score >= 5 & overall_score <= 6 ~ "Mid-Value",
+    overall_score >= 3 & overall_score <= 4 ~ "Low-Value",
+    TRUE ~ "Unknown"  # Default value if none of the above conditions are met
+  ))
+```
+
+```{r}
+# Plot the distribution of records by customer_segmentation
+ggplot(data = data_customer_segmentation, aes(x = customer_segmentation)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Records by Customer Segmentation",
+       x = "Customer Segmentation",
+       y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+# Get a random sample of 100 records
+sample_data <- data_customer_segmentation %>%
+  sample_n(1000, replace = FALSE)
+# Plot the distribution of records by customer_segmentation
+ggplot(data = sample_data, aes(x = recency, y = total_paid, color = customer_segmentation)) +
+  geom_jitter(alpha = 1, width = 0.3) +
+  labs(title = "Distribution of Records by Customer Segmentation",
+       x = "Recency in days",
+       y = "Total Paid") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(face = "bold")) +  # Make y-axis labels bold
+  scale_y_continuous(breaks = seq(0, 2000, by = 200),
+                     labels = function(x) paste0("R$ ", x),
+                     limits = c(0, 2000))
+```
