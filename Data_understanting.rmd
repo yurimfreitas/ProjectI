@@ -153,6 +153,28 @@ ggplot(top_7_cities, aes(x = reorder(customer_city, -number_of_orders_city), y =
   theme(axis.text.x = element_text(face = "bold"))
 ```
 
+# We can see the number of orders in 2018 is decreasing generaly
+```{r}
+# Aggregate data by day
+data_customer_agg <- data_customer %>%
+  mutate(date = as.Date(order_purchase_timestamp)) %>%
+  group_by(date) %>%
+  summarise(orders = n())
+
+# Plot the chart with trend line starting from 2018
+ggplot(data = data_customer_agg, aes(x = date, y = orders)) +
+  geom_line(color = "steelblue") +
+  geom_point(color = "steelblue") +
+  geom_smooth(data = filter(data_customer_agg, date >= as.Date("2018-01-01")),
+              aes(x = date, y = orders),
+              method = "lm", se = FALSE, color = "red") +  # Add trend line starting from 2018
+  labs(title = "Number of Orders Over Time",
+       x = "Date",
+       y = "Number of Orders") +
+  theme_minimal()
+```
+
+# Remove data with null values
 ```{r}
 data_customer <- na.omit(data_customer)
 View(data_customer)

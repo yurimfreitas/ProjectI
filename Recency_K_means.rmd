@@ -5,6 +5,7 @@
 # High-Value: Very active customers, who spend very often and spend more than any other customers
 
 # Recency
+# Calculate how many days it has until 01-01-2018
 ```{r}
 data_customer_segmentation <- data_customer %>%
                               group_by(customer_unique_id) %>%
@@ -76,18 +77,6 @@ print(fit.kmeans)
 fit.kmeans$centers
 ```
 
-# Plot observations assigned to centers
-```{r}
-plot(recency ~ 1,
-     data = customer_segmentation_std,
-     col = fit.kmeans$cluster + 1,
-     pch = 19,
-     main = "Recency (with assigned clusters)",
-     sub = "Note: These are 4 clusters, classification for recency variable",
-     xlab = "Recency (standardized)",
-     ylab = "Recency (standardized)")
-```
-
 # Assigne the cluster number to data_customer_segmentation and show the numbers grouped by recency_cluster
 ```{r}
 # Create a mapping from the original cluster centers to the ordered centers
@@ -103,6 +92,18 @@ counts <- data_customer_segmentation %>%
           summarise(count = n())
 
 counts
+```
+
+# Plot observations assigned to centers
+```{r}
+plot(recency_std ~ 1,
+     data = data_customer_segmentation,
+     col = fit.kmeans$cluster + 1,
+     pch = 19,
+     main = "Number of orders by Recency (with assigned clusters)",
+     sub = "Note: These are 4 clusters, classification for recency variable",
+     xlab = "Number of orders",
+     ylab = "Recency (standardized)")
 ```
 
 # Plot a bar chart showing the cluster numbers
