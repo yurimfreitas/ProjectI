@@ -1,0 +1,116 @@
+
+# Customer Segmentation: RFM (Recency, Frequency, Monetary)
+# Low-Value: Less active customers — customers who rarely make purchases and generate low revenues
+# Mid-Value: Those who use the platform quite frequently and generate moderate revenues
+# High-Value: Very active customers, who spend very often and spend more than any other customers
+
+# Recency
+# Calculate how many days it has until 01-01-2018
+```{r}
+data_customer_segmentation <- data_customer %>%
+                              group_by(customer_unique_id) %>%
+                              summarise(count_orders = n(), max_purchase = max(order_purchase_timestamp)) %>%
+                              arrange(max_purchase) %>%
+                              select(customer_unique_id, count_orders, max_purchase)
+data_customer_segmentation$recency <- as.numeric(difftime(Sys.Date(), data_customer_segmentation$max_purchase, units = "days"))
+```
+
+# Distribution of the recency
+```{r}
+ggplot(data_customer_segmentation, aes(x = recency)) +
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black") +
+  labs(title = "Recency Histogram",
+       x = "Recency (Days)",
+       y = "Count")
+```
+
+# To assign a recency score, we’ll be using KMeans clustering. But before that, as with other KMeans projects, we need to know how many clusters we need.
+# Also, we'll use only use numeric features
+```{r}
+customer_segmentation_num <- data_customer_segmentation[,4]
+head(customer_segmentation_num)
+```
+
+# As K-means calculates distances, we'll standardize the numerical variables
+```{r}
+customer_segmentation_std <- as.data.frame(scale(customer_segmentation_num))
+head(customer_segmentation_std)
+```
+
+# Note that means=0 and sd=1 for all variables after standardization
+```{r}
+summary(customer_segmentation_std)
+sapply(customer_segmentation_std, sd)
+```
+
+# Determine Number of Clusters --------------------------------------------
+```{r}
+# Get just a sample of data, these algorithms are heavy
+sampled_data_std <- customer_segmentation_std %>%
+                    sample_n(10000, replace = FALSE)
+
+# "Elbow method", for total within-cluster sum of square
+factoextra::fviz_nbclust(sampled_data_std, kmeans, method = "wss")
+
+# "Silhouette-score method", for how similar a data point is within-cluster
+factoextra::fviz_nbclust(sampled_data_std, kmeans, method = "silhouette")
+```
+
+# Define number of clusters
+```{r}
+k_clusters <- 4
+```
+
+# Apply K-means algorithm
+```{r}
+# Perform k-means clustering
+set.seed(811)
+fit.kmeans <- kmeans(customer_segmentation_std,
+                     centers = k_clusters,
+                     nstart = 20, # how many random sets should be chosen
+                     iter.max = 100)
+print(fit.kmeans)
+```
+
+# Note that "Cluster means" are the centers of each cluster ->
+```{r} 
+fit.kmeans$centers
+```
+
+# Assigne the cluster number to data_customer_segmentation and show the numbers grouped by recency_cluster
+```{r}
+# Create a mapping from the original cluster centers to the ordered centers
+cluster_mapping <- match(fit.kmeans$centers, rev(sort(fit.kmeans$centers)))
+# Append cluster labels to the standardized data
+customer_segmentation_std$cluster <- cluster_mapping[fit.kmeans$cluster]
+# Append cluster and recency to data_customer_segmentation
+data_customer_segmentation$recency_cluster <- customer_segmentation_std$cluster
+data_customer_segmentation$recency_std <- customer_segmentation_std$recency
+
+counts <- data_customer_segmentation %>%
+          group_by(recency_cluster) %>%
+          summarise(count = n())
+
+counts
+```
+
+# Plot observations assigned to centers
+```{r}
+plot(recency_std ~ 1,
+     data = data_customer_segmentation,
+     col = fit.kmeans$cluster + 1,
+     pch = 19,
+     main = "Number of orders by Recency (with assigned clusters)",
+     sub = "Note: These are 4 clusters, classification for recency variable",
+     xlab = "Number of orders",
+     ylab = "Recency (standardized)")
+```
+
+# Plot a bar chart showing the cluster numbers
+```{r}
+ggplot(data_customer_segmentation, aes(x = recency_cluster)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Counts of Recency Clusters",
+       x = "Recency Cluster",
+       y = "Count")
+```
