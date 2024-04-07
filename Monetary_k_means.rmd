@@ -1,0 +1,163 @@
+# Customer Segmentation: RFM (Recency, Frequency, Monetary)
+# Low-Value: Less active customers — customers who rarely make purchases and generate low revenues
+# Mid-Value: Those who use the platform quite frequently and generate moderate revenues
+# High-Value: Very active customers, who spend very often and spend more than any other customers
+
+# Monetary
+# Reorder the DataFrame by total_paid
+```{r}
+data_customer_segmentation <- data_customer_segmentation %>%
+                              arrange(total_paid)
+```
+
+# Distribution of total paid
+```{r}
+ggplot(data = data_customer_segmentation, aes(x = total_paid)) +
+  geom_histogram(binwidth = 150, fill = "skyblue", color = "black") +  # Adjust binwidth
+  labs(title = "Total Paid Histogram",
+       x = "Total Paid (Reais)",
+       y = "Count")
+```
+
+# To assign a monetary score, we’ll be using KMeans clustering. But before that, as with other KMeans projects, we need to know how many clusters we need.
+# Also, we'll use only use numeric features
+```{r}
+customer_segmentation_monetary_num <- data_customer_segmentation[,2]
+head(customer_segmentation_monetary_num)
+```
+
+# As K-means calculates distances, we'll standardize the numerical variables
+```{r}
+customer_segmentation_monetary_std <- as.data.frame(scale(customer_segmentation_monetary_num))
+head(customer_segmentation_monetary_std)
+```
+
+# Note that means=0 and sd=1 for all variables after standardization
+```{r}
+summary(customer_segmentation_monetary_std)
+sapply(customer_segmentation_monetary_std, sd)
+```
+
+# Determine Number of Clusters --------------------------------------------
+```{r}
+# Get just a sample of data, these algorithms are heavy
+sampled_data_monetary_std <- customer_segmentation_monetary_std %>%
+                            sample_n(10000, replace = FALSE)
+
+# "Elbow method", for total within-cluster sum of square
+factoextra::fviz_nbclust(sampled_data_monetary_std, kmeans, method = "wss")
+
+# "Silhouette-score method", for how similar a data point is within-cluster
+factoextra::fviz_nbclust(sampled_data_monetary_std, kmeans, method = "silhouette")
+```
+
+# Define number of clusters
+```{r}
+k_clusters <- 4
+```
+
+# Apply K-means algorithm
+```{r}
+# Perform k-means clustering
+set.seed(811)
+fit.kmeans <- kmeans(customer_segmentation_monetary_std,
+                     centers = k_clusters,
+                     nstart = 20, # how many random sets should be chosen
+                     iter.max = 100)
+print(fit.kmeans)
+```
+
+# Note that "Cluster means" are the centers of each cluster ->
+```{r} 
+fit.kmeans$centers
+```
+
+# Assigne the cluster number to data_customer_segmentation and show the numbers grouped by monetary_cluster
+```{r}
+# Create a mapping from the original cluster centers to the ordered centers
+cluster_mapping <- match(fit.kmeans$centers, sort(fit.kmeans$centers))
+# Append cluster labels to the standardized data
+customer_segmentation_monetary_std$cluster <- cluster_mapping[fit.kmeans$cluster]
+# Append cluster and recency to data_customer_segmentation
+data_customer_segmentation$monetary_cluster <- customer_segmentation_monetary_std$cluster
+data_customer_segmentation$monetary_std <- customer_segmentation_monetary_std$total_paid
+
+counts <- data_customer_segmentation %>%
+          group_by(monetary_cluster) %>%
+          summarise(count = n())
+
+counts
+```
+
+# Plot observations assigned to centers
+```{r}
+plot(monetary_std ~ 1,
+     data = data_customer_segmentation,
+     col = fit.kmeans$cluster + 1,
+     pch = 19,
+     main = "Number of orders by Total Paid (with assigned clusters)",
+     sub = "Note: These are 4 clusters, classification for monetary variable",
+     xlab = "Number of orders",
+     ylab = "Monetary (standardized)")
+```
+
+# Plot a bar chart showing the cluster numbers
+```{r}
+ggplot(data_customer_segmentation, aes(x = monetary_cluster)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Counts of Monetary Clusters",
+       x = "Monetary Cluster",
+       y = "Count")
+```
+
+# Overall Cluster - Going to merge all clusters (RFM) and create the Overall
+```{r}
+data_customer_segmentation$overall_score <- data_customer_segmentation$recency_cluster+
+                                            data_customer_segmentation$frequency_cluster+
+                                            data_customer_segmentation$monetary_cluster
+
+data_customer_segmentation %>%  group_by(overall_score) %>%  summarise(count = n())
+```
+
+# Customer Segmentation
+# 3–4: Low-Value
+# 5–6: Mid-Value
+# >=7: High-Value
+```{r}
+# Create a new column customer_segmentation based on overall_score
+data_customer_segmentation <- data_customer_segmentation %>%
+  mutate(customer_segmentation = case_when(
+    overall_score >= 7 ~ "High-Value",
+    overall_score >= 5 & overall_score <= 6 ~ "Mid-Value",
+    overall_score >= 3 & overall_score <= 4 ~ "Low-Value",
+    TRUE ~ "Unknown"  # Default value if none of the above conditions are met
+  ))
+```
+
+```{r}
+# Plot the distribution of records by customer_segmentation
+ggplot(data = data_customer_segmentation, aes(x = customer_segmentation)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Records by Customer Segmentation",
+       x = "Customer Segmentation",
+       y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+# Get a random sample of 100 records
+sample_data <- data_customer_segmentation %>%
+  sample_n(1000, replace = FALSE)
+# Plot the distribution of records by customer_segmentation
+ggplot(data = sample_data, aes(x = recency, y = total_paid, color = customer_segmentation)) +
+  geom_jitter(alpha = 1, width = 0.3) +
+  labs(title = "Distribution of Records by Customer Segmentation",
+       x = "Recency in days",
+       y = "Total Paid") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(face = "bold")) +  # Make y-axis labels bold
+  scale_y_continuous(breaks = seq(0, 2000, by = 200),
+                     labels = function(x) paste0("R$ ", x),
+                     limits = c(0, 2000))
+```
