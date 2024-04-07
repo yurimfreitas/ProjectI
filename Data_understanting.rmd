@@ -32,11 +32,26 @@ library(ggplot2)
 
 # Read from ECOM data source
 ```{r}
-order <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/fct_orders.csv")
-customer <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/dim_customers.csv")
-order_item <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/fct_order_items.csv")
-product <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/Dim_products.csv")
-payment <- read.csv("C:/Users/yfreitas/Documents/RSamples/ProjectI/dataset_projeto1_20240323/dim_payments.csv")
+#LOADING  CUSTOMER
+url_path <- paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vQIGXZHYrUMsj1e1cCi3JCZWHawxfaTuT3OX1_iTLQUt2tJKQ58jErOIhCGat9HSplMBMxAsFQxSBos/pub?output=csv")
+customer <- read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING ORDER_ITEM
+url_path <- paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vTpbThjdbYWHKFrJoqr0NkNQaaEneFl_1a8u1ki9PxmForQ0rnS7-4RXflKx0KHfz4fVA1DgrBLIpi9/pub?output=csv")
+order_item <-read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING PRODUCTS
+url_path <- paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vS-UgEDZPC9y4Z5SSZF-D0IfRGt_OIoq8EcuZF0t8qaIbErQBHf5zxDcJvwTo8kOzfx4csTqqiIN9fr/pub?output=csv")
+product <- read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING PAYMENTS
+url_path <-paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vRUd_uWktNGjPmFqxkpl1Wp8G1v2wVXFscFj8MqgaXQoBnqsZfDPVp6dmTBxdaSLLO4nL4-9ABhly6i/pub?output=csv")
+payment <- read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING ORDER
+url_path <-paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vSWKMH7XtzfEnHf9_8SZpiMBXD8z5VnUAvVF8WrN6KB-6FAOkYMoNQrRu9CKW4H_IHNTkDowKKxLMJu/pub?output=csv")
+order <- read.csv(url_path, sep =",")
+rm(url_path)
 ```
 
 # Counts in the tables
