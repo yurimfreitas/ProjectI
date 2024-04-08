@@ -7,11 +7,15 @@
 # Recency
 # Calculate how many days it has until 01-01-2018
 ```{r}
+library(lubridate)
+
 data_customer_segmentation <- data_customer %>%
-                              group_by(customer_unique_id) %>%
-                              summarise(count_orders = n(), max_purchase = max(order_purchase_timestamp), total_paid = sum(total_payment)) %>%
-                              arrange(max_purchase) %>%
-                              select(customer_unique_id, total_paid, count_orders, max_purchase)
+  filter(!(year(order_purchase_timestamp) == 2018)) %>%
+  group_by(customer_unique_id) %>%
+  summarise(count_orders = n(), max_purchase = max(order_purchase_timestamp), total_paid = sum(total_payment)) %>%
+  arrange(max_purchase) %>%
+  select(customer_unique_id, total_paid, count_orders, max_purchase)
+
 data_customer_segmentation$recency <- as.numeric(difftime(Sys.Date(), data_customer_segmentation$max_purchase, units = "days"))
 ```
 
