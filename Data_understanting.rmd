@@ -91,6 +91,7 @@ order_order_item <- inner_join(order, order_item, by = "order_id")
 #order_id with many itens order_id=='001ab0a7578dd66cd4b0a71f5b6e1e41'
 #first order to customer_unique_id = '2f64e403852e6893ae37485d5fcacdaf'
 #last order to customer_unique_id = '24ac2b4327e25baf39f2119e4228976a'
+#order with many products distincts = '8272b63d03f5f79c56e9e4120aec44ef'
 ```
 
 # Create a data_customer df with all customers and its orders
@@ -123,6 +124,13 @@ data_customer$order_purchase_timestamp <- as.POSIXct(data_customer$order_purchas
 data_customer$order_delivered_customer_date <- as.POSIXct(data_customer$order_delivered_customer_date, format = "%Y-%m-%d %H:%M:%S")
 data_customer$purchase_weekday <- weekdays(data_customer$order_purchase_timestamp)
 data_customer$delivered_weekday <- weekdays(data_customer$order_delivered_customer_date)
+```
+
+# Create a specific df to understanding products
+```{r}
+data_product <- data_customer %>% inner_join(select(order_order_item, order_id, product_id), by = "order_id") %>% 
+                  inner_join(select(product, product_id, product_category_name), by = "product_id") %>%
+                  select(order_id, product_id, product_category_name)
 ```
 
 # Orders per weekday
@@ -193,6 +201,28 @@ ggplot(data = data_customer_agg, aes(x = date, y = orders)) +
        x = "Date",
        y = "Number of Orders") +
   theme_minimal()
+```
+
+# Top 7 products by orders
+```{r}
+# Count the number of orders for each product category
+category_counts <- table(data_product$product_category_name)
+
+# Convert the result to a data frame and sort it by counts
+category_counts_df <- as.data.frame(category_counts)
+category_counts_df <- category_counts_df[order(-category_counts_df$Freq), ]
+
+# Select top 7 categories
+top_7_categories <- category_counts_df[1:7, ]
+
+# Plot the bar chart for top 7 categories
+ggplot(top_7_categories, aes(x = reorder(Var1, Freq), y = Freq)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Top 7 Product Categories by Sales",
+       x = "Product Category",
+       y = "Number of Orders") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  coord_flip()
 ```
 
 # Remove data with null values
