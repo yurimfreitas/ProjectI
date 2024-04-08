@@ -1,2 +1,5 @@
 # ProjectI
 Project for machine learning project I
+
+
+This project aims to demonstrate the capability of Machine Learning in predicting the next purchase through classification techniques, as well as performing customer segmentation. To achieve these objectives, appropriate techniques will be applied, including clustering, RFM analysis (Recency, Frequency, Monetary), using the CRISP-DM methodology (Cross-Industry Standard Process for Data Mining). The project will require the implementation of at least two classification algorithms, construction of confusion matrices, evaluation of performance measures such as accuracy, recall, precision, and F1-score, as well as evaluation of the ROC curve (Receiver Operating Characteristic) and its score. Iterations will be performed in the development process, including the use of cross-validation techniques and resampling to improve model generalization. Additionally, algorithm hyperparameters will be explored to optimize predictive performance.
