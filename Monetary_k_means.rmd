@@ -134,6 +134,7 @@ data_customer_segmentation <- data_customer_segmentation %>%
   ))
 ```
 
+# Plot number of customer by segment
 ```{r}
 # Plot the distribution of records by customer_segmentation
 ggplot(data = data_customer_segmentation, aes(x = customer_segmentation)) +
@@ -144,6 +145,7 @@ ggplot(data = data_customer_segmentation, aes(x = customer_segmentation)) +
   theme_minimal()
 ```
 
+# Customer segmentation
 ```{r}
 # Get a random sample of 100 records
 sample_data <- data_customer_segmentation %>%
