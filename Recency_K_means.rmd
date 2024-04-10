@@ -1,17 +1,21 @@
 
 # Customer Segmentation: RFM (Recency, Frequency, Monetary)
+# Recency: Number of days from the last purchase untill 01-01-2018 (time without buy)
+# Frequency: Number of orders
+# Monetary: Amount spent
 # Low-Value: Less active customers — customers who rarely make purchases and generate low revenues
 # Mid-Value: Those who use the platform quite frequently and generate moderate revenues
 # High-Value: Very active customers, who spend very often and spend more than any other customers
+
 
 # Recency
 # Calculate how many days it has until 01-01-2018
 ```{r}
 data_customer_segmentation <- data_customer_cutoff %>%
-                              group_by(customer_unique_id) %>%
+                              group_by(customer_unique_id, target) %>%
                               summarise(count_orders = n(), max_purchase = max(order_purchase_timestamp), total_paid = sum(total_payment)) %>%
                               arrange(max_purchase) %>%
-                              select(customer_unique_id, total_paid, count_orders, max_purchase)
+                              select(customer_unique_id, target, total_paid, count_orders, max_purchase)
 data_customer_segmentation$recency <- as.numeric(difftime(as.Date("2018-01-01"), data_customer_segmentation$max_purchase, units = "days"))
 ```
 
@@ -27,7 +31,7 @@ ggplot(data_customer_segmentation, aes(x = recency)) +
 # To assign a recency score, we’ll be using KMeans clustering. But before that, as with other KMeans projects, we need to know how many clusters we need.
 # Also, we'll use only use numeric features
 ```{r}
-customer_segmentation_recency_num <- data_customer_segmentation[,5]
+customer_segmentation_recency_num <- data_customer_segmentation[,6]
 head(customer_segmentation_recency_num)
 ```
 
@@ -96,14 +100,14 @@ counts
 
 # Plot observations assigned to centers
 ```{r}
-plot(recency_std ~ 1,
+plot(recency ~ 1,
      data = data_customer_segmentation,
      col = fit.kmeans$cluster + 1,
      pch = 19,
      main = "Number of orders by Recency (with assigned clusters)",
      sub = "Note: These are 4 clusters, classification for recency variable",
      xlab = "Number of orders",
-     ylab = "Recency (standardized)")
+     ylab = "Recency")
 ```
 
 # Plot a bar chart showing the cluster numbers

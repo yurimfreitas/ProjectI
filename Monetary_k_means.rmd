@@ -22,7 +22,7 @@ ggplot(data = data_customer_segmentation, aes(x = total_paid)) +
 # To assign a monetary score, we’ll be using KMeans clustering. But before that, as with other KMeans projects, we need to know how many clusters we need.
 # Also, we'll use only use numeric features
 ```{r}
-customer_segmentation_monetary_num <- data_customer_segmentation[,2]
+customer_segmentation_monetary_num <- data_customer_segmentation[,3]
 head(customer_segmentation_monetary_num)
 ```
 
@@ -91,7 +91,8 @@ counts
 
 # Plot observations assigned to centers
 ```{r}
-plot(monetary_std ~ 1,
+# Change to show total_paid
+plot(total_paid ~ 1,
      data = data_customer_segmentation,
      col = fit.kmeans$cluster + 1,
      pch = 19,
@@ -147,9 +148,11 @@ ggplot(data = data_customer_segmentation, aes(x = customer_segmentation)) +
 
 # Customer segmentation
 ```{r}
-# Get a random sample of 100 records
+# Get a random sample of 1000 records
+data_customer_segmentation <- ungroup(data_customer_segmentation)
 sample_data <- data_customer_segmentation %>%
   sample_n(1000, replace = FALSE)
+
 # Plot the distribution of records by customer_segmentation
 ggplot(data = sample_data, aes(x = recency, y = total_paid, color = customer_segmentation)) +
   geom_jitter(alpha = 1, width = 0.3) +
