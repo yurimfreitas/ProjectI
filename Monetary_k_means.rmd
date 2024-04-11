@@ -135,7 +135,7 @@ data_customer_segmentation <- data_customer_segmentation %>%
   ))
 ```
 
-# Plot number of customer by segment
+# Plot customer by segment
 ```{r}
 # Plot the distribution of records by customer_segmentation
 ggplot(data = data_customer_segmentation, aes(x = customer_segmentation)) +
