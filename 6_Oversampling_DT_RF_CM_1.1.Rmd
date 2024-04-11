@@ -10,9 +10,14 @@ freq_table <- table(data_customer_segmentation$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
+
+#Loadind Library
 ```{r}
 library(ROSE)
+```
 
+#applyin oversampling
+```{r}
 # Calcular o número de instâncias na classe majoritária
 num_majoritaria <- sum(data_customer_segmentation$target_categorical == "non.buyer")
 
@@ -38,6 +43,7 @@ freq_table <- table(oversampled_data$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
+
 # Define train and test sets ----------------------------------------------
 ```{r}
 set.seed(123) 
@@ -49,7 +55,6 @@ data_test <- oversampled_data[-trainIndex, ]
 
 ```
 
-
 # metric roc
 ```{r}
 metric <- "ROC"
@@ -60,6 +65,7 @@ control <- trainControl(method = "repeatedcv",
                         classProbs = TRUE,
                         savePredictions = TRUE)
 ```
+
 # Learn Decision Tree (rpart)
 ```{r}
 seed <- 123
@@ -70,6 +76,7 @@ model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + re
                   metric = metric,
                   trControl = control)
 ```
+
 # Learn Random Forest (rf)
 ```{r}
 set.seed(seed)
@@ -79,20 +86,22 @@ model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + re
                   metric = metric,
                   trControl = control)
 ```
-#' Check models, metrics and specific tunning parameters
-#'   cp: Complexity parameter
-#'   mtry: Number of randomly drawn candidate variables
+
+#Check models, metrics and specific tunning parameters
+# cp: Complexity parameter
+#  mtry: Number of randomly drawn candidate variables
 ```{r}
 print(model_DT)
 ```
 ```{r}
 print(model_RF)
 ```
-#' Calculate and compare models' performance
-#' Note:
-#'   - We'll use function 'resamples()' for visualization
-#'     of the resampling results
-#'   - These calculations are based on resampling the TRAIN set
+
+#Calculate and compare models' performance
+#Note:
+#   - We'll use function 'resamples()' for visualization
+#    of the resampling results
+#  - These calculations are based on resampling the TRAIN set
 
 ```{r}
 fit_models <- list(Decision_tree = model_DT, 
@@ -101,19 +110,23 @@ results <- resamples(fit_models)
 dotplot(results)
 summary(results)
 ```
+
 # Check Complexity Parameter (cp) used for trained model
 ```{r}
 print(model_DT$results$cp)
 ```
+
 # Plot ROC vs Complexity Parameter for model
 ```{r}
 plot(model_DT, main = "Decision Tree")
 ```
+
 # Check mtry parameter used for trained model
 # getModelInfo(model_RF)$rf$parameters
 ```{r}
 print(model_RF$results$mtry)
 ```
+
 #Plot ROC vs used parameters for model
 ```{r}
 plot(model_RF, main = "Random Forest")
@@ -132,15 +145,18 @@ model_RF_tuned <- train(target_categorical ~ monetary_cluster + frequency_cluste
                        trControl = control,
                        tuneGrid = tune_grid)
 ```
+
 # Inspect model
 ```{r}
 print(model_RF_tuned)
 ```
+
 # Plot ROC vs used parameters
 ```{r}
 plot(model_RF_tuned,
      main = "Random Forest - tuned for mtry parameter")
 ```
+
 # Compare all models ------------------------------------------------------
 # Calculate and compare models' performance
 ```{r}
@@ -151,23 +167,15 @@ results <- resamples(fit_models)
 dotplot(results)
 summary(results)
 ```
+
 # Model Validation --------------------------------------------------------
-#' To validate the model, we'll make predictions from the TEST set
+# To validate the model, we'll make predictions from the TEST set
 # Estimate performance of Random Forest on the TEST dataset
 ```{r}
 predictions_prob <- predict(model_RF_tuned, data_test, type = "prob")
 head(predictions_prob)
 predictions_raw <- predict(model_RF_tuned, data_test, type = "raw")
 head(cbind(predictions_prob, predictions_raw))
-```
-
-
-
-```{r}
-# Estatísticas resumidas das probabilidades de previsão para cada classe
-summary(predictions_prob$X1)
-summary(predictions_prob$X0)
-
 ```
 
 # Confusion Matrix

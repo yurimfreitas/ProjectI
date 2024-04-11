@@ -221,6 +221,73 @@ ggplot(top_7_categories, aes(x = reorder(Var1, Freq), y = Freq)) +
 
 # Remove data with null values
 ```{r}
-data_customer <- na.omit(data_customer)
-View(data_customer)
+#data_customer <- na.omit(data_customer)
+#View(data_customer)
 ```
+
+#visualizing NA
+```{r}
+colSums(is.na(data_customer))
+```
+
+#Calculating the average delivery time
+```{r}
+ order_delivered_customer_date
+data_customer$delivered_time <- difftime(data_customer$order_delivered_customer_date, data_customer$order_purchase_timestamp, units = "days")
+
+
+mean_delivered_time <- mean(data_customer$delivered_time, na.rm = TRUE)
+
+
+data_customer$mean_delivered_time <- mean_delivered_time
+```
+
+#Replace the values in the Order_Delivered_Customer_date column with calculated values
+```{r}
+
+data_customer$order_delivered_customer_date<- data_customer$order_purchase_timestamp + mean_delivered_time
+
+
+data_customer$order_delivered_customer_date[is.na(data_customer$order_delivered_customer_date)] <- data_customer$order_delivered_customer_date[is.na(data_customer$order_delivered_customer_date)]
+
+```
+
+# Filling the values in the column Delivered_wekday with the average
+```{r}
+day_week <- c("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
+
+data_customer$purchase_weekday_num <- match(data_customer$purchase_weekday, day_week)
+data_customer$delivered_weekday_num <- match(data_customer$delivered_weekday, day_week)
+
+mean_weekday <- round(mean(c(data_customer$purchase_weekday_num, data_customer$delivered_weekday_num), na.rm = TRUE))
+
+
+mean_weekday_str <- day_week[mean_weekday]
+
+data_customer$delivered_weekday[is.na(data_customer$delivered_weekday)] <- mean_weekday_str
+```
+
+#Filling NA with mean from order_purchase_timestamp
+#visualizing NA
+```{r}
+
+mean_buy <- mean(data_customer$order_purchase_timestamp, na.rm = TRUE)
+mean_day_week <- weekdays(mean_buy)
+
+data_customer$order_purchase_timestamp[is.na(data_customer$order_purchase_timestamp)] <- mean_buy
+
+
+data_customer$purchase_weekday[is.na(data_customer$purchase_weekday)] <- mean_day_week
+
+
+mean_delivered_time <- mean(data_customer$delivered_time, na.rm = TRUE)
+data_customer$delivered_time[is.na(data_customer$delivered_time)] <- mean_delivered_time
+
+
+data_customer <- subset(data_customer, select = -c(purchase_weekday_num, delivered_weekday_num))
+
+
+colSums(is.na(data_customer))
+
+```
+
