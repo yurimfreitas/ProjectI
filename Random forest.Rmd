@@ -8,10 +8,25 @@ output: html_document
 ```{r}
 library(caret)
 ```
+#looking data
+```{r}
+str(data_customer_segmentation)
+```
+# Exclude customer_unique_id
+```{r}
+data_customer_segmentation <- data_customer_segmentation %>%
+  select(-customer_unique_id) 
+```
 # Label categorical variables
 ```{r}
-data_customer_cutoff$target <- factor(data_customer_cutoff$target, levels = 1:0,
-                            labels = c("buyer", "non.buyer"))
+data_customer_segmentation$target <- as.factor(data_customer_segmentation$target)
+```
+
+
+# Label categorical variables
+```{r}
+#data_customer_cutoff$target <- factor(data_customer_cutoff$target, levels = 1:0,
+#                            labels = c("buyer", "non.buyer"))
 ```
 # Classification class distribution in full dataset
 ```{r}
@@ -21,25 +36,15 @@ cbind(Frequency = freq_table,
 ```
 # Define train and test sets ----------------------------------------------
 ```{r}
-seed <- 541
-set.seed(seed)
-# Criar índices para divisão do conjunto de dados
-train_index <- createDataPartition(data_customer_cutoff$target, p = 0.01, list = FALSE)
+set.seed(123) 
+trainIndex <- createDataPartition(data_customer_segmentation$target, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+data_train <- data_customer_segmentation[trainIndex, ]
+data_test <- data_customer_segmentation[-trainIndex, ]
 
-# Criar train_set contendo apenas as colunas "customer_unique_id" e "target"
-train_set <- data_customer_cutoff[train_index, c("customer_unique_id", "target")]
-
-# Criar test_set contendo apenas as colunas "customer_unique_id" e "target"
-test_set <- data_customer_cutoff[-train_index, c("customer_unique_id", "target")]
 ```
-#verify N/A  and exclude
-```{r}
-any(is.na(train_set))
 
-train_set <- na.omit(train_set)
-
-any(is.na(train_set))
-```
 
 # metric roc
 ```{r}
@@ -54,9 +59,17 @@ control <- trainControl(method = "repeatedcv",
 # Learn Decision Tree (rpart)
 ```{r}
 # Treinando o modelo de árvore de decisão novamente
+# Verifique os níveis da variável target
+levels(data_train$target)
+
+# Aplique make.names() para os níveis
+data_train$target <- make.names(data_train$target)
+
+# Treine o modelo novamenteZ 
+seed <- 123
 set.seed(seed)
 model_DT <- train(target ~ .,
-                  data = train_set,
+                  data = data_train,
                   method = "rpart", # Decision Trees, with CART algorithm
                   metric = metric,
                   trControl = control)
@@ -65,7 +78,7 @@ model_DT <- train(target ~ .,
 ```{r}
 set.seed(seed)
 model_RF <- train(target ~ .,
-                  data = train_set,
+                  data = data_train,
                   method = "rf",  # Random Forests
                   metric = metric,
                   trControl = control)
@@ -117,7 +130,7 @@ tune_grid <- expand.grid(mtry = 1:10)
 
 set.seed(seed)
 model_RF_tuned <- train(target ~ .,
-                       data = train_set,
+                       data = data_train,
                        method = "rf",
                        metric = metric,
                        trControl = control,
@@ -146,15 +159,26 @@ summary(results)
 #' To validate the model, we'll make predictions from the TEST set
 # Estimate performance of Random Forest on the TEST dataset
 ```{r}
-predictions_prob <- predict(model_RF_tuned, test_set, type = "prob")
+predictions_prob <- predict(model_RF_tuned, data_test, type = "prob")
 head(predictions_prob)
-predictions_raw <- predict(model_RF_tuned, test_set, type = "raw")
+predictions_raw <- predict(model_RF_tuned, data_test, type = "raw")
 head(cbind(predictions_prob, predictions_raw))
 ```
+
+
+
+```{r}
+# Estatísticas resumidas das probabilidades de previsão para cada classe
+summary(predictions_prob$X1)
+summary(predictions_prob$X0)
+
+```
+
 # Confusion Matrix
 ```{r}
 confusionMatrix(data = predictions_raw,
-                reference = test_set$target)
+                reference = data_test)
 ```
+
 
 
