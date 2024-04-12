@@ -321,3 +321,30 @@ colSums(is.na(data_customer))
 ```
 
 
+```{r}
+# Suponha que você queira verificar outliers na variável "total_paid"
+boxplot(data_customer$total_price, main="Boxplot of Total Paid")
+
+```
+```{r}
+# Calcular o intervalo interquartil (IQR)
+Q1 <- quantile(data_customer$total_price, 0.25)
+Q3 <- quantile(data_customer$total_price, 0.75)
+IQR <- Q3 - Q1
+
+# Definir os limites para identificar outliers
+limite_inferior <- Q1 - 1.5 * IQR
+limite_superior <- Q3 + 1.5 * IQR
+
+# Identificar outliers
+outliers <- data_customer$total_price < limite_inferior | data_customer$total_price > limite_superior
+
+# Excluir outliers
+data_customer <- data_customer[!outliers, ]
+
+```
+
+```{r}
+boxplot(data_customer$total_price, main="Boxplot of Total Paid")
+```
+
