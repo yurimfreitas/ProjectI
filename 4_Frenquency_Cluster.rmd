@@ -20,6 +20,7 @@ data_customer_segmentation <- data_customer_segmentation %>%
                             mutate(frequency_cluster = ifelse(count_orders == 1, 1, 2))
 ```
 
+# Summary of Frequency
 ```{r}
 counts <- data_customer_segmentation %>%
           group_by(frequency_cluster) %>%

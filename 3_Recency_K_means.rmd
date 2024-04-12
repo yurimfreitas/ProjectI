@@ -7,7 +7,6 @@
 # Mid-Value: Those who use the platform quite frequently and generate moderate revenues
 # High-Value: Very active customers, who spend very often and spend more than any other customers
 
-
 # Recency
 # Calculate how many days it has until 01-01-2018
 ```{r}

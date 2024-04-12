@@ -167,10 +167,7 @@ ggplot(data = sample_data, aes(x = recency, y = total_paid, color = customer_seg
                      limits = c(0, 2000))
 ```
 
-
-
-
-
+# Save df in a RData to be used
 ```{r}
 # Salvar como RData
 save(data_customer_segmentation, file = "data_customer_segmentation.RData")
