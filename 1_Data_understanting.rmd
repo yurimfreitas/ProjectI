@@ -49,7 +49,7 @@ url_path <-paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vRUd_uWktNGjP
 payment <- read.csv(url_path, sep = ",")
 rm(url_path)
 #LOADING ORDER
-url_path <-paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vSWKMH7XtzfEnHf9_8SZpiMBXD8z5VnUAvVF8WrN6KB-6FAOkYMoNQrRu9CKW4H_IHNTkDowKKxLMJu/pub?output=csv")
+url_path <-paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vSWKMH7XtzfEnHf9_8SZpiMBXD8z5VnUAvVF8WrN6KB-6FAOkYMoNQrRu9CKW4H_IHNTkDowKKxLMJu/pub?gid=614649936&single=true&output=csv")
 order <- read.csv(url_path, sep =",")
 rm(url_path)
 ```
@@ -225,9 +225,32 @@ ggplot(top_7_categories, aes(x = reorder(Var1, Freq), y = Freq)) +
 #View(data_customer)
 ```
 
+# Looking column names
+```{r}
+colnames(data_customer)
+```
+
+# Visualizing order status
+```{r}
+print(unique(data_customer$order_status))
+# Count canceled
+print(sum(data_customer$order_status == "canceled"))
+# Excluding  canceled
+data_customer <- data_customer[data_customer$order_status != "canceled", ]
+# Checking if there are still canceled
+print(sum(data_customer$order_status == "canceled"))
+```
+
 # visualizing NA
 ```{r}
 colSums(is.na(data_customer))
+```
+
+# looking order_purchase_timestamp
+```{r}
+#  Where is NA
+print(subset(data_customer, is.na(order_purchase_timestamp)))
+
 ```
 
 # Calculating the average delivery time
@@ -237,6 +260,22 @@ data_customer$delivered_time <- difftime(data_customer$order_delivered_customer_
 mean_delivered_time <- mean(data_customer$delivered_time, na.rm = TRUE)
 
 data_customer$mean_delivered_time <- mean_delivered_time
+```
+
+# Replace the values is Na in order_purchase_timestamp is NA
+```{r}
+# Converting mean_delivered_time from days to seconds
+mean_delivered_time_seconds <- mean_delivered_time * 86400  # 86400 seconds in one day
+
+# Obtaining the average of the order_purchase_timestamp column
+mean_order_purchase_timestamp <- mean(data_customer$order_purchase_timestamp, na.rm = TRUE)
+
+# Adding mean_delivered_time_seconds to the average order_purchase_timestamp
+new_order_purchase_timestamp <- mean_order_purchase_timestamp + mean_delivered_time_seconds
+
+# Assigning the New order_purchase_timestamp to values in
+data_customer$order_purchase_timestamp[is.na(data_customer$order_purchase_timestamp)] <- new_order_purchase_timestamp
+
 ```
 
 # Replace the values in the Order_Delivered_Customer_date column with calculated values
@@ -261,7 +300,8 @@ data_customer$delivered_weekday[is.na(data_customer$delivered_weekday)] <- mean_
 ```
 
 # Filling NA with mean from order_purchase_timestamp
-# visualizing NA
+# Excluding 2 column delivered_time and mean_delivered_time
+# visualizing if exists NA
 ```{r}
 mean_buy <- mean(data_customer$order_purchase_timestamp, na.rm = TRUE)
 mean_day_week <- weekdays(mean_buy)
@@ -275,6 +315,9 @@ data_customer$delivered_time[is.na(data_customer$delivered_time)] <- mean_delive
 
 data_customer <- subset(data_customer, select = -c(purchase_weekday_num, delivered_weekday_num))
 
+data_customer <- subset(data_customer, select = -c(delivered_time, mean_delivered_time))
+
 colSums(is.na(data_customer))
 ```
+
 

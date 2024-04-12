@@ -5,18 +5,26 @@ date: "2024-04-11"
 output: html_document
 ---
 
+# Loadind Library
+```{r}
+library(ROSE)
+library(caret)
+```
+
+# Label categorical variables
+```{r}
+data_customer_segmentation$target_categorical <- factor(data_customer_segmentation$target, levels = 1:0,
+                            labels = c("buyer", "non.buyer"))
+```
+
+# Frequency
 ```{r}
 freq_table <- table(data_customer_segmentation$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
 
-#Loadind Library
-```{r}
-library(ROSE)
-```
-
-#applyin oversampling
+# Applyin oversampling
 ```{r}
 # Calcular o número de instâncias na classe majoritária
 num_majoritaria <- sum(data_customer_segmentation$target_categorical == "non.buyer")
@@ -32,7 +40,7 @@ oversampled_data <- ovun.sample(target_categorical ~ .,
 table(oversampled_data$target_categorical)
 
 ```
-#looking data
+# Looking data
 ```{r}
 str(oversampled_data)
 ```
@@ -87,22 +95,20 @@ model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + re
                   trControl = control)
 ```
 
-#Check models, metrics and specific tunning parameters
+# Check models, metrics and specific tunning parameters
 # cp: Complexity parameter
-#  mtry: Number of randomly drawn candidate variables
+# mtry: Number of randomly drawn candidate variables
 ```{r}
 print(model_DT)
-```
-```{r}
+
 print(model_RF)
 ```
 
-#Calculate and compare models' performance
-#Note:
-#   - We'll use function 'resamples()' for visualization
-#    of the resampling results
-#  - These calculations are based on resampling the TRAIN set
-
+# Calculate and compare models' performance
+# Note:
+#      We'll use function 'resamples()' for visualization
+#      of the resampling results
+#      These calculations are based on resampling the TRAIN set
 ```{r}
 fit_models <- list(Decision_tree = model_DT, 
                    Random_forest = model_RF)
