@@ -28,6 +28,7 @@ graphics.off()
 ```{r}
 library(dplyr)
 library(ggplot2)
+library(lubridate)
 ```
 
 # Read from ECOM data source
@@ -86,6 +87,7 @@ order_order_item <- inner_join(order, order_item, by = "order_id")
 #first order to customer_unique_id = '2f64e403852e6893ae37485d5fcacdaf'
 #last order to customer_unique_id = '24ac2b4327e25baf39f2119e4228976a'
 #order with many products distincts = '8272b63d03f5f79c56e9e4120aec44ef'
+#order = 62e9c99570efe4131bd3b6676a4fcd00  customer_unique_id = bf8a0c3c2d799abfac5de9c338e26707
 ```
 
 # Create a data_customer df with all customers and its orders
@@ -114,8 +116,8 @@ data_customer <- data_customer %>%
 
 # Cast chr to datetimestamp and get the weekday for purchase and delivered
 ```{r}
-data_customer$order_purchase_timestamp <- as.POSIXct(data_customer$order_purchase_timestamp, format = "%Y-%m-%d %H:%M:%S")
-data_customer$order_delivered_customer_date <- as.POSIXct(data_customer$order_delivered_customer_date, format = "%Y-%m-%d %H:%M:%S")
+data_customer$order_purchase_timestamp <- ymd_hms(data_customer$order_purchase_timestamp)
+data_customer$order_delivered_customer_date <- ymd_hms(data_customer$order_delivered_customer_date)
 data_customer$purchase_weekday <- weekdays(data_customer$order_purchase_timestamp)
 data_customer$delivered_weekday <- weekdays(data_customer$order_delivered_customer_date)
 ```
