@@ -155,7 +155,11 @@ ggplot(data_customer, aes(x = purchase_weekday, fill = purchase_weekday)) +
   theme_minimal() +
   theme(axis.text.x = element_text(face = "bold")) +
   geom_hline(yintercept = mean(orders_per_weekday$number_of_orders_weekday), linetype = "dashed", color = "black") +
+<<<<<<< HEAD
    geom_text(aes(x = 4, y = mean(orders_per_weekday$number_of_orders_weekday)+400, label = paste0("Mean: ", round(mean(orders_per_weekday$number_of_orders_weekday), 2))), color = "black", fontface = "bold")
+=======
+  geom_text(aes(x = 4, y = mean(orders_per_weekday$number_of_orders_weekday)+400, label = paste0("Mean: ", round(mean(orders_per_weekday$number_of_orders_weekday), 2))), color = "black", fontface = "bold")
+>>>>>>> 12a1ae9b4b416203354248e2b8c93b150919ab89
 ```
 
 # Orders per City
