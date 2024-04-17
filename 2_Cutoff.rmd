@@ -1,8 +1,4 @@
 
-# Load library
-```{r}
-library(lubridate)
-```
 
 # 2018 data and less than 2018 separated in two df
 ```{r}

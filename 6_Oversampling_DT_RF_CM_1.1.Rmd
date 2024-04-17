@@ -23,7 +23,6 @@ freq_table <- table(data_customer_segmentation$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
-
 # Applyin oversampling
 ```{r}
 # Calcular o número de instâncias na classe majoritária
@@ -33,16 +32,26 @@ num_majoritaria <- sum(data_customer_segmentation$target_categorical == "non.buy
 oversampled_data <- ovun.sample(target_categorical ~ ., 
                                 data = data_customer_segmentation, 
                                 method = "over", 
-                                N = 10^5,  # Um valor grande suficiente
+                                N = 65454,  # Um valor grande suficiente
                                 seed = 123)$data
 
 # Verificar a distribuição da classe após oversampling
 table(oversampled_data$target_categorical)
 
 ```
-# Looking data
+
+# Define train and test sets ----------------------------------------------
 ```{r}
-str(oversampled_data)
+set.seed(123) 
+trainIndex <- createDataPartition(data_customer_segmentation$target_categorical, p = .2, 
+                                  list = FALSE, 
+                                  times = 1)
+data_test <- data_customer_segmentation[-trainIndex, ]
+
+trainIndexover <- createDataPartition(oversampled_data$target_categorical, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+data_trainover <- oversampled_data[trainIndexover, ]
 ```
 
 # Classification class distribution in full dataset
@@ -52,16 +61,7 @@ cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
 
-# Define train and test sets ----------------------------------------------
-```{r}
-set.seed(123) 
-trainIndex <- createDataPartition(oversampled_data$target_categorical, p = .8, 
-                                  list = FALSE, 
-                                  times = 1)
-data_train <- oversampled_data[trainIndex, ]
-data_test <- oversampled_data[-trainIndex, ]
 
-```
 
 # metric roc
 ```{r}
@@ -71,7 +71,8 @@ control <- trainControl(method = "repeatedcv",
                         repeats = 3, # number of repetitions
                         summaryFunction = twoClassSummary,
                         classProbs = TRUE,
-                        savePredictions = TRUE)
+                        savePredictions = TRUE,
+                        verboseIter = TRUE)
 ```
 
 # Learn Decision Tree (rpart)
@@ -79,10 +80,11 @@ control <- trainControl(method = "repeatedcv",
 seed <- 123
 set.seed(seed)
 model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                  data = oversampled_data,
+                  data = data_customer_segmentation,
                   method = "rpart", # Decision Trees, with CART algorithm
                   metric = metric,
                   trControl = control)
+gc()
 ```
 
 # Learn Random Forest (rf)
@@ -93,6 +95,7 @@ model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + re
                   method = "rf",  # Random Forests
                   metric = metric,
                   trControl = control)
+gc()
 ```
 
 # Check models, metrics and specific tunning parameters
@@ -122,11 +125,6 @@ summary(results)
 print(model_DT$results$cp)
 ```
 
-# Plot ROC vs Complexity Parameter for model
-```{r}
-plot(model_DT, main = "Decision Tree")
-```
-
 # Check mtry parameter used for trained model
 # getModelInfo(model_RF)$rf$parameters
 ```{r}
@@ -141,7 +139,7 @@ plot(model_RF, main = "Random Forest")
 # Improve the Random Forest model -----------------------------------------
 # To improve the RF model, we fine tune the mtry parameter
 ```{r}
-tune_grid <- expand.grid(mtry = 1:10)
+tune_grid <- expand.grid(mtry = c(2, 3, 4))
 
 set.seed(seed)
 model_RF_tuned <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
