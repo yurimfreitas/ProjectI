@@ -7,9 +7,8 @@ print(unique(data_customer$order_status))
 # Contar observações com o status "canceled"
 print(sum(data_customer$order_status == "canceled" | data_customer$order_status == "unavailable"))
 
-# Excluir observações com os status "canceled" e "unavailable"
+# Excluir observações com os status "canceled" e "unavailable" e "processing"
 data_customer <- data_customer[data_customer$order_status != "canceled" & data_customer$order_status != "unavailable" & data_customer$order_status != "processing", ]
-
 ```
 
 # Calculating the average delivery time
@@ -21,22 +20,6 @@ mean_delivered_time <- mean(data_customer$delivered_time, na.rm = TRUE)
 data_customer$mean_delivered_time <- mean_delivered_time
 ```
 
-# Replace the values is Na in order_purchase_timestamp is NA
-```{r}
-# Converting mean_delivered_time from days to seconds
-mean_delivered_time_seconds <- mean_delivered_time * 86400  # 86400 seconds in one day
-
-# Obtaining the average of the order_purchase_timestamp column
-mean_order_purchase_timestamp <- mean(data_customer$order_purchase_timestamp, na.rm = TRUE)
-
-# Adding mean_delivered_time_seconds to the average order_purchase_timestamp
-new_order_purchase_timestamp <- mean_order_purchase_timestamp + mean_delivered_time_seconds
-
-# Assigning the New order_purchase_timestamp to values in
-data_customer$order_purchase_timestamp[is.na(data_customer$order_purchase_timestamp)] <- new_order_purchase_timestamp
-
-```
-
 # Replace the values in the Order_Delivered_Customer_date column with calculated values
 ```{r}
 data_customer$order_delivered_customer_date<- data_customer$order_purchase_timestamp + mean_delivered_time
@@ -44,36 +27,14 @@ data_customer$order_delivered_customer_date<- data_customer$order_purchase_times
 data_customer$order_delivered_customer_date[is.na(data_customer$order_delivered_customer_date)] <- data_customer$order_delivered_customer_date[is.na(data_customer$order_delivered_customer_date)]
 ```
 
-# Filling the values in the column Delivered_wekday with the average
+# Filling the values in the column Delivered_wekday again
 ```{r}
-day_week <- c("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
-
-data_customer$purchase_weekday_num <- match(data_customer$purchase_weekday, day_week)
-data_customer$delivered_weekday_num <- match(data_customer$delivered_weekday, day_week)
-
-mean_weekday <- round(mean(c(data_customer$purchase_weekday_num, data_customer$delivered_weekday_num), na.rm = TRUE))
-
-mean_weekday_str <- day_week[mean_weekday]
-
-data_customer$delivered_weekday[is.na(data_customer$delivered_weekday)] <- mean_weekday_str
+data_customer$delivered_weekday <- weekdays(data_customer$order_delivered_customer_date)
 ```
 
-# Filling NA with mean from order_purchase_timestamp
 # Excluding 2 column delivered_time and mean_delivered_time
 # visualizing if exists NA
 ```{r}
-mean_buy <- mean(data_customer$order_purchase_timestamp, na.rm = TRUE)
-mean_day_week <- weekdays(mean_buy)
-
-data_customer$order_purchase_timestamp[is.na(data_customer$order_purchase_timestamp)] <- mean_buy
-
-data_customer$purchase_weekday[is.na(data_customer$purchase_weekday)] <- mean_day_week
-
-mean_delivered_time <- mean(data_customer$delivered_time, na.rm = TRUE)
-data_customer$delivered_time[is.na(data_customer$delivered_time)] <- mean_delivered_time
-
-data_customer <- subset(data_customer, select = -c(purchase_weekday_num, delivered_weekday_num))
-
 data_customer <- subset(data_customer, select = -c(delivered_time, mean_delivered_time))
 
 colSums(is.na(data_customer))
