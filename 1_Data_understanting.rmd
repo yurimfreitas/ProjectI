@@ -236,7 +236,7 @@ boxplot(data_customer$total_price, main="Boxplot of Total Paid")
 # Outlier
 ```{r}
 # identify
-outliers <- data_customer$total_price > 7000
+outliers <- data_customer$total_price > 7500
 # Excluding
 data_customer <- data_customer[!outliers, ]
 #boxplot
