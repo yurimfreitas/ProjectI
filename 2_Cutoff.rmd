@@ -1,8 +1,4 @@
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 12a1ae9b4b416203354248e2b8c93b150919ab89
 # 2018 data and less than 2018 separated in two df
 ```{r}
 data_customer_cutoff_2018 <- data_customer %>%
