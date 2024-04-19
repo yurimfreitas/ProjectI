@@ -43,20 +43,16 @@ table(oversampled_data$target_categorical)
 # Define train and test sets ----------------------------------------------
 ```{r}
 set.seed(123) 
-trainIndex <- createDataPartition(data_customer_segmentation$target_categorical, p = .2, 
+trainIndex <- createDataPartition(data_customer_segmentation$target_categorical, p = .8, 
                                   list = FALSE, 
                                   times = 1)
 data_test <- data_customer_segmentation[-trainIndex, ]
-
-trainIndexover <- createDataPartition(oversampled_data$target_categorical, p = .8, 
-                                  list = FALSE, 
-                                  times = 1)
-data_trainover <- oversampled_data[trainIndexover, ]
+data_trainover <- data_customer_segmentation[trainIndexover, ]
 ```
 
 # Classification class distribution in full dataset
 ```{r}
-freq_table <- table(oversampled_data$target_categorical)
+freq_table <- table(data_customer_segmentation$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
@@ -91,7 +87,7 @@ gc()
 ```{r}
 set.seed(seed)
 model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                  data = oversampled_data,
+                  data = data_customer_segmentation,
                   method = "rf",  # Random Forests
                   metric = metric,
                   trControl = control)

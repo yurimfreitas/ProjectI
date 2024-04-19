@@ -23,8 +23,6 @@ data_customer$mean_delivered_time <- mean_delivered_time
 # Replace the values in the Order_Delivered_Customer_date column with calculated values
 ```{r}
 data_customer$order_delivered_customer_date[is.na(data_customer$order_delivered_customer_date)] <- data_customer$order_purchase_timestamp[is.na(data_customer$order_delivered_customer_date)] + mean_delivered_time
-
-
 ```
 
 # Filling the values in the column Delivered_wekday again
