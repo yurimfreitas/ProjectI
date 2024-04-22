@@ -83,8 +83,12 @@ data_customer_segmentation$monetary_cluster <- customer_segmentation_monetary_st
 data_customer_segmentation$monetary_std <- customer_segmentation_monetary_std$total_paid
 
 counts <- data_customer_segmentation %>%
-          group_by(monetary_cluster) %>%
-          summarise(count = n())
+  group_by(monetary_cluster) %>%
+  summarise(
+    count = n(),
+    min_total_paid = min(total_paid),
+    max_total_paid = max(total_paid)
+  )
 
 counts
 ```
