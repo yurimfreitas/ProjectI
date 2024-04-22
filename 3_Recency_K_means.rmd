@@ -92,7 +92,11 @@ data_customer_segmentation$recency_std <- customer_segmentation_recency_std$rece
 
 counts <- data_customer_segmentation %>%
           group_by(recency_cluster) %>%
-          summarise(count = n())
+          summarise(
+            count = n(),
+            min_recency = min(recency),
+            max_recency = max(recency)
+  )
 
 counts
 ```

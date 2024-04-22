@@ -49,7 +49,7 @@ data_customer_cutoff_2016_2017 <- data_customer %>%
 # Check if the customer is present in 2018 to create the target 
 ```{r}
 data_customer_cutoff <- data_customer_cutoff_2016_2017
-# Create a new column in data_customer_cutoff_2016_2017
+# Create a new column in data_customer_cutoff
 data_customer_cutoff$target <- as.integer(data_customer_cutoff_2016_2017$customer_unique_id %in% data_customer_cutoff_2018$customer_unique_id)
 ```
 
