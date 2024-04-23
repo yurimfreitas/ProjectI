@@ -162,7 +162,7 @@ plot(model_RF_tuned,
 # Compare all models ------------------------------------------------------
 # Calculate and compare models' performance
 ```{r}
-it_models <- list(Decision_tree = model_DT, 
+fit_models <- list(Decision_tree = model_DT, 
                    Random_forest = model_RF,
                    Random_forest_tuned = model_RF_tuned)
 results <- resamples(fit_models)
