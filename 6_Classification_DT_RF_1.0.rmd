@@ -57,7 +57,7 @@ model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + re
 
 ```{r}
 # Learn Random Forest (rf)
-set.seed(seed)
+set.seed(811)
 model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
                   data = train_set,
                   method = "rf",  # Random Forests
