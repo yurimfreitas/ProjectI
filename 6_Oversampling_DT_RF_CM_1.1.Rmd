@@ -23,6 +23,7 @@ freq_table <- table(data_customer_segmentation$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
+
 # Applyin oversampling
 ```{r}
 # Calcular o número de instâncias na classe majoritária
@@ -37,7 +38,6 @@ oversampled_data <- ovun.sample(target_categorical ~ .,
 
 # Verificar a distribuição da classe após oversampling
 table(oversampled_data$target_categorical)
-
 ```
 
 # Define train and test sets ----------------------------------------------
@@ -60,8 +60,6 @@ freq_table <- table(oversampled_data$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
-
-
 
 # metric roc
 ```{r}
@@ -91,7 +89,7 @@ gc()
 ```{r}
 set.seed(seed)
 model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                  data = oversampled_data,
+                  data = data_trainover,
                   method = "rf",  # Random Forests
                   metric = metric,
                   trControl = control)
@@ -143,7 +141,7 @@ tune_grid <- expand.grid(mtry = c(2, 3, 4))
 
 set.seed(seed)
 model_RF_tuned <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                       data = data_train,
+                       data = data_trainover,
                        method = "rf",
                        metric = metric,
                        trControl = control,

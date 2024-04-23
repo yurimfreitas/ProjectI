@@ -55,6 +55,16 @@ model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + re
                   trControl = control)
 ```
 
+```{r}
+# Learn Random Forest (rf)
+set.seed(seed)
+model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
+                  data = train_set,
+                  method = "rf",  # Random Forests
+                  metric = metric,
+                  trControl = control)
+```
+
 # Check models, metrics and specific tunning parameters
 ```{r}
 #   cp: Complexity parameter
@@ -63,7 +73,15 @@ print(model_DT)
 print(model_DT$results$cp)
 ```
 
-# Validate results with a Confusion Matrix --------------------------------
+# Inspect model: Random Forest --------------------------------------------
+```{r}
+print(model_RF)
+# Plot ROC vs used parameters for model
+plot(model_RF, main = "Random Forest")
+```
+
+# Model Validation --------------------------------------------------------
+# To validate the model, we'll make predictions from the TEST set
 ```{r}
 # Calculate model predictions on TEST set
 prediction_dt_prob <- predict(model_DT, test_set, type = "prob")
@@ -75,10 +93,20 @@ test_set$prediction_raw <- prediction_dt_raw
 head(prediction_dt_raw)
 ```
 
-# Confusion matrix
+```{r}
+# Estimate performance of Random Forest on the TEST dataset
+predictions_rf_prob <- predict(model_RF, test_set, type = "prob")
+head(predictions_rf_prob)
+
+predictions_rf_raw <- predict(model_RF, test_set, type = "raw")
+head(cbind(predictions_rf_prob, predictions_rf_raw))
+```
+
+# Confusion matrix DT
 ```{r}
 confusionMatrix(data = prediction_dt_raw,
-                reference = test_set$target_categorical)
+                reference = test_set$target_categorical,
+                mode = "everything")
                 # Tip: use the following argument for more metrics
                 #   mode = "everything"
                 # Note that:
@@ -86,5 +114,16 @@ confusionMatrix(data = prediction_dt_raw,
                 #   Recall = Sensitivity
 ```
 
+# Confusion matrix RF
+```{r}
+confusionMatrix(data = predictions_rf_raw,
+                reference = test_set$target_categorical,
+                mode = "everything")
+                # Tip: use the following argument for more metrics
+                #   mode = "everything"
+                # Note that:
+                #   Precison = Pos Pred Value
+                #   Recall = Sensitivity
+```
 
 
