@@ -33,8 +33,6 @@ cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
 
-
-
 # metric roc
 ```{r}
 metric <- "ROC"
