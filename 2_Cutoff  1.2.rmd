@@ -1,0 +1,61 @@
+
+# Visualizing order status
+```{r}
+# Imprimir valores únicos da variável order_status
+print(unique(data_customer$order_status))
+
+# Contar observações com o status "canceled"
+print(sum(data_customer$order_status == "canceled" | data_customer$order_status == "unavailable"))
+
+# Excluir observações com os status "canceled" e "unavailable" e "processing"
+data_customer <- data_customer[data_customer$order_status != "canceled" & data_customer$order_status != "unavailable" & data_customer$order_status != "processing", ]
+```
+
+# Calculating the average delivery time
+```{r}
+data_customer$delivered_time <- difftime(data_customer$order_delivered_customer_date, data_customer$order_purchase_timestamp, units = "days")
+
+mean_delivered_time <- mean(data_customer$delivered_time, na.rm = TRUE)
+
+data_customer$mean_delivered_time <- mean_delivered_time
+```
+
+# Replace the values in the Order_Delivered_Customer_date column with calculated values
+```{r}
+data_customer$order_delivered_customer_date[is.na(data_customer$order_delivered_customer_date)] <- data_customer$order_purchase_timestamp[is.na(data_customer$order_delivered_customer_date)] + mean_delivered_time
+```
+
+# Filling the values in the column Delivered_wekday again
+```{r}
+data_customer$delivered_weekday <- weekdays(data_customer$order_delivered_customer_date)
+```
+
+# Excluding 2 column delivered_time and mean_delivered_time
+# visualizing if exists NA
+```{r}
+data_customer <- subset(data_customer, select = -c(delivered_time, mean_delivered_time))
+
+colSums(is.na(data_customer))
+```
+
+
+# 2018 data and less than 2018 separated in two df
+```{r}
+data_customer_cutoff_2018 <- data_customer %>%
+                              filter(year(order_purchase_timestamp) == 2018)
+data_customer_cutoff_2016_2017 <- data_customer %>%
+                                  filter(year(order_purchase_timestamp) < 2018)
+```
+
+# Check if the customer is present in 2018 to create the target 
+```{r}
+data_customer_cutoff <- data_customer_cutoff_2016_2017
+# Create a new column in data_customer_cutoff
+data_customer_cutoff$target <- as.integer(data_customer_cutoff_2016_2017$customer_unique_id %in% data_customer_cutoff_2018$customer_unique_id)
+```
+
+
+
+
+
+

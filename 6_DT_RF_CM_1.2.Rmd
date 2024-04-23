@@ -1,0 +1,176 @@
+---
+title: "Untitled"
+author: "Fabian Garrett"
+date: "2024-04-11"
+output: html_document
+---
+
+# Loadind Library
+```{r}
+library(ROSE)
+library(caret)
+```
+
+# New Features payments type as factor
+```{r}
+data_customer_segmentation$credit <- as.factor(data_customer_segmentation$credit)
+data_customer_segmentation$boleto <- as.factor(data_customer_segmentation$boleto)
+data_customer_segmentation$debit <- as.factor(data_customer_segmentation$debit)
+data_customer_segmentation$voucher <- as.factor(data_customer_segmentation$voucher)
+```
+
+# Label categorical variables
+```{r}
+data_customer_segmentation$target_categorical <- factor(data_customer_segmentation$target, levels = 1:0,
+                            labels = c("buyer", "non.buyer"))
+```
+
+# Frequency
+```{r}
+freq_table <- table(data_customer_segmentation$target_categorical)
+cbind(Frequency = freq_table,
+      Proportion = round(prop.table(freq_table), 3))
+```
+
+
+# Define train and test sets ----------------------------------------------
+```{r}
+set.seed(123) 
+trainIndex <- createDataPartition(data_customer_segmentation$target_categorical, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+data_test <- data_customer_segmentation[-trainIndex, ]
+data_train <- data_customer_segmentation[trainIndex, ]
+```
+
+# metric roc
+```{r}
+metric <- "ROC"
+control <- trainControl(method = "repeatedcv",
+                        number = 5, # number of folds
+                        repeats = 1, # number of repetitions
+                        summaryFunction = twoClassSummary,
+                        classProbs = TRUE,
+                        savePredictions = TRUE,
+                        verboseIter = TRUE)
+```
+
+# Learn Decision Tree (rpart)
+```{r}
+seed <- 123
+set.seed(seed)
+model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster + credit + boleto + debit + voucher ,
+                  data = data_customer_segmentation,
+                  method = "rpart", # Decision Trees, with CART algorithm
+                  metric = metric,
+                  trControl = control)
+gc()
+```
+
+# Learn Random Forest (rf)
+```{r}
+set.seed(seed)
+model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster + credit + boleto + debit + voucher ,
+                  data = data_train,
+                  method = "rf",  # Random Forests
+                  metric = metric,
+                  trControl = control)
+gc()
+varImp(model_RF)
+```
+
+# Check models, metrics and specific tunning parameters
+# cp: Complexity parameter
+# mtry: Number of randomly drawn candidate variables
+```{r}
+print(model_DT)
+
+print(model_RF)
+```
+
+# Calculate and compare models' performance
+# Note:
+#      We'll use function 'resamples()' for visualization
+#      of the resampling results
+#      These calculations are based on resampling the TRAIN set
+```{r}
+fit_models <- list(Decision_tree = model_DT, 
+                   Random_forest = model_RF)
+results <- resamples(fit_models) 
+dotplot(results)
+summary(results)
+```
+
+# Check Complexity Parameter (cp) used for trained model
+```{r}
+print(model_DT$results$cp)
+```
+
+# Check mtry parameter used for trained model
+# getModelInfo(model_RF)$rf$parameters
+```{r}
+print(model_RF$results$mtry)
+```
+
+#Plot ROC vs used parameters for model
+```{r}
+plot(model_RF, main = "Random Forest")
+```
+
+# Improve the Random Forest model -----------------------------------------
+# To improve the RF model, we fine tune the mtry parameter
+```{r}
+tune_grid <- expand.grid(mtry = c(2, 4, 7))
+
+set.seed(seed)
+model_RF_tuned <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster + credit + boleto + debit + voucher , 
+                       data = data_train,
+                       method = "rf",
+                       metric = metric,
+                       trControl = control,
+                       tuneGrid = tune_grid)
+```
+
+# Inspect model
+```{r}
+print(model_RF_tuned)
+```
+
+# Plot ROC vs used parameters
+```{r}
+plot(model_RF_tuned,
+     main = "Random Forest - tuned for mtry parameter")
+```
+
+# Compare all models ------------------------------------------------------
+# Calculate and compare models' performance
+```{r}
+fit_models <- list(Decision_tree = model_DT, 
+                   Random_forest = model_RF,
+                   Random_forest_tuned = model_RF_tuned)
+results <- resamples(fit_models)
+dotplot(results)
+summary(results)
+```
+
+# Model Validation --------------------------------------------------------
+# To validate the model, we'll make predictions from the TEST set
+# Estimate performance of Random Forest on the TEST dataset
+```{r}
+predictions_prob <- predict(model_RF_tuned, data_test, type = "prob")
+head(predictions_prob)
+predictions_raw <- predict(model_RF_tuned, data_test, type = "raw")
+head(cbind(predictions_prob, predictions_raw))
+```
+
+# Confusion Matrix
+```{r}
+confusionMatrix(data = predictions_raw,
+                reference = data_test$target_categorical,
+                mode = "everything")
+                # Tip: use the following argument for more metrics
+                #   mode = "everything"
+                # Note that:
+                #   Precison = Pos Pred Value
+                #   Recall = Sensitivity
+```

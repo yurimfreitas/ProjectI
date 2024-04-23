@@ -1,0 +1,267 @@
+
+---
+title: "Project I"
+author: "Yuri Freitas"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Dataset: ECOM
+# Data understanding: Profiling -> Data quality
+# Exploratory data analysis -> Variable kind, 
+#                              Distributions (histogram, box plot), have a unique table (view)
+#                              Basic KPI: Sells, 
+#                                         quantity, 
+#                                         count status
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Clean lists
+```{r}
+rm(list = ls())
+graphics.off()
+```
+
+# Load necessary library
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+# Read from ECOM data source
+```{r}
+#LOADING  CUSTOMER
+url_path <- paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vQIGXZHYrUMsj1e1cCi3JCZWHawxfaTuT3OX1_iTLQUt2tJKQ58jErOIhCGat9HSplMBMxAsFQxSBos/pub?output=csv")
+customer <- read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING ORDER_ITEM
+url_path <- paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vTpbThjdbYWHKFrJoqr0NkNQaaEneFl_1a8u1ki9PxmForQ0rnS7-4RXflKx0KHfz4fVA1DgrBLIpi9/pub?output=csv")
+order_item <-read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING PRODUCTS
+url_path <- paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vS-UgEDZPC9y4Z5SSZF-D0IfRGt_OIoq8EcuZF0t8qaIbErQBHf5zxDcJvwTo8kOzfx4csTqqiIN9fr/pub?output=csv")
+product <- read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING PAYMENTS
+url_path <-paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vRUd_uWktNGjPmFqxkpl1Wp8G1v2wVXFscFj8MqgaXQoBnqsZfDPVp6dmTBxdaSLLO4nL4-9ABhly6i/pub?output=csv")
+payment <- read.csv(url_path, sep = ",")
+rm(url_path)
+#LOADING ORDER
+url_path <-paste0("https://docs.google.com/spreadsheets/d/e/2PACX-1vSWKMH7XtzfEnHf9_8SZpiMBXD8z5VnUAvVF8WrN6KB-6FAOkYMoNQrRu9CKW4H_IHNTkDowKKxLMJu/pub?gid=614649936&single=true&output=csv")
+order <- read.csv(url_path, sep = ",")
+rm(url_path)
+```
+
+# Counts in the tables
+```{r}
+#summary(order)
+#summary(order_item)
+#summary(customer)
+#summary(product)
+#summary(payment)
+```
+
+```{r}
+# View(order)
+# View(order_item)
+# View(product)
+# View(customer)
+# View(payment)
+```
+
+# Getting only interesting fields for analysis
+```{r}
+order <- order %>% select(order_id, customer_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
+order_item <- order_item %>% select(order_id, order_item_id, product_id, price, freight_value) 
+order_order_item <- inner_join(order, order_item, by = "order_id")
+```
+
+# Some keys to check the data anytime
+```{r}
+#order_id for check payments = '009ac365164f8e06f59d18a08045f6c4'
+#cutomer_unique_id with many orders= '004288347e5e88a27ded2bb23747066c'
+#order_id with many itens order_id=='001ab0a7578dd66cd4b0a71f5b6e1e41'
+#first order to customer_unique_id = '2f64e403852e6893ae37485d5fcacdaf'
+#last order to customer_unique_id = '24ac2b4327e25baf39f2119e4228976a'
+#order with many products distincts = '8272b63d03f5f79c56e9e4120aec44ef'
+#order = 62e9c99570efe4131bd3b6676a4fcd00  customer_unique_id = bf8a0c3c2d799abfac5de9c338e26707
+```
+
+# Create a data_customer df with all customers and its orders
+```{r}
+data_customer <- inner_join(order, customer, by = "customer_id") %>% select(customer_unique_id, customer_city, customer_state, order_id, order_status, order_purchase_timestamp, order_delivered_customer_date)
+```
+
+# Enriching the data_customer with number of itens in each order, total price, total freight value and price + freight
+```{r}
+data_customer <- data_customer %>% inner_join(select(order_order_item, order_id, price, freight_value), by = "order_id") %>% 
+                  group_by(customer_unique_id, order_id) %>% mutate(order_itens = n(), total_price = sum(price), total_freight_value = sum(freight_value)) %>% 
+                  select(-price, -freight_value) %>% 
+                  distinct()
+data_customer$total_price_freight <- data_customer$total_price + data_customer$total_freight_value
+```
+
+# Enriching the data with total payment from payment and also the number of payments, sometimes it has many payments for the same order (vouher, credit card) etc. 
+```{r}
+data_customer <- data_customer %>% 
+                  inner_join(select(payment, order_id, payment_value), by = "order_id") %>% 
+                  group_by(order_id) %>% 
+                  mutate(qty_payments = n(), total_payment = sum(payment_value)) %>% 
+                  select(-payment_value) %>% 
+                  distinct()
+```
+
+# Cast chr to datetimestamp and get the weekday for purchase and delivered
+```{r}
+data_customer$order_purchase_timestamp <- ymd_hms(data_customer$order_purchase_timestamp)
+data_customer$order_delivered_customer_date <- ymd_hms(data_customer$order_delivered_customer_date)
+data_customer$purchase_weekday <- weekdays(data_customer$order_purchase_timestamp)
+data_customer$delivered_weekday <- weekdays(data_customer$order_delivered_customer_date)
+```
+
+# Create a specific df to understanding products
+```{r}
+data_product <- data_customer %>% inner_join(select(order_order_item, order_id, product_id), by = "order_id") %>% 
+                  inner_join(select(product, product_id, product_category_name), by = "product_id") %>%
+                  select(order_id, product_id, product_category_name)
+```
+
+# Adicionar a coluna payment_type do dataset payment ao data frame data_customer
+```{r}
+# Agregar os dados de payment para garantir apenas uma linha por order_id
+payment_aggregated <- payment %>%
+                        group_by(order_id) %>%
+                        summarise(payment_type = first(payment_type))
+
+# Realizar a junção entre data_customer e payment_aggregated
+data_customer <- data_customer %>%
+                  inner_join(payment_aggregated, by = "order_id")
+```
+
+# Criar a coluna 'credit' com base na coluna 'payment_type'
+```{r}
+data_customer$credit <- as.integer(data_customer$payment_type == "credit_card")
+data_customer$boleto <- as.integer(data_customer$payment_type == "boleto")
+data_customer$debit <- as.integer(data_customer$payment_type == "debit_card")
+data_customer$voucher <- as.integer(data_customer$payment_type == "voucher")
+```
+
+# Orders per weekday
+```{r}
+orders_per_weekday <- data_customer %>%
+                      group_by(purchase_weekday) %>%
+                      summarise(number_of_orders_weekday = n())
+
+# Define a color palette for weekdays
+weekday_colors <- c("Sunday" = "#FF9999",   # Light red
+                    "Monday" = "#FFCC99",  # Light orange
+                    "Tuesday" = "#FFFF99", # Light yellow
+                    "Wednesday" = "#CCFF99", # Light green
+                    "Thursday" = "#99CCFF",  # Light blue
+                    "Friday" = "#CC99FF",    # Light purple
+                    "Saturday" = "#FF99FF")  # Light pink
+
+# Plot the number of orders per weekday with different colors
+ggplot(data_customer, aes(x = purchase_weekday, fill = purchase_weekday)) +
+  geom_bar() +
+  scale_fill_manual(values = weekday_colors) +
+  labs(title = "Number of Orders per Weekday",
+       x = "Weekday",
+       y = "Number of Orders") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(face = "bold")) +
+  geom_hline(yintercept = mean(orders_per_weekday$number_of_orders_weekday), linetype = "dashed", color = "black") +
+  geom_text(aes(x = 4, y = mean(orders_per_weekday$number_of_orders_weekday)+400, label = paste0("Mean: ", round(mean(orders_per_weekday$number_of_orders_weekday), 2))), color = "black", fontface = "bold")
+```
+
+# Orders per City
+```{r}
+orders_per_city <- data_customer %>%
+                   group_by(customer_city) %>%
+                   summarise(number_of_orders_city = n())
+
+# Select only the top 7 cities
+top_7_cities <- orders_per_city %>%
+                arrange(desc(number_of_orders_city)) %>%
+                head(7)
+
+# Plot the number of orders per weekday with different colors
+ggplot(top_7_cities, aes(x = reorder(customer_city, -number_of_orders_city), y = number_of_orders_city, fill = customer_city)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Orders per City (Top 7)",
+       x = "City",
+       y = "Number of Orders") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(face = "bold"))
+```
+
+# We can see the number of orders in 2018 is decreasing generaly
+```{r}
+# Aggregate data by day
+data_customer_agg <- data_customer %>%
+  mutate(date = as.Date(order_purchase_timestamp)) %>%
+  group_by(date) %>%
+  summarise(orders = n())
+
+# Plot the chart with trend line starting from 2018
+ggplot(data = data_customer_agg, aes(x = date, y = orders)) +
+  geom_line(color = "steelblue") +
+  geom_point(color = "steelblue") +
+  geom_smooth(data = filter(data_customer_agg, date >= as.Date("2018-01-01")),
+              aes(x = date, y = orders),
+              method = "lm", se = FALSE, color = "red") +  # Add trend line starting from 2018
+  labs(title = "Number of Orders Over Time",
+       x = "Date",
+       y = "Number of Orders") +
+  theme_minimal()
+```
+
+# Top 7 products by orders
+```{r}
+# Count the number of orders for each product category
+category_counts <- table(data_product$product_category_name)
+
+# Convert the result to a data frame and sort it by counts
+category_counts_df <- as.data.frame(category_counts)
+category_counts_df <- category_counts_df[order(-category_counts_df$Freq), ]
+
+# Select top 7 categories
+top_7_categories <- category_counts_df[1:7, ]
+
+# Plot the bar chart for top 7 categories
+ggplot(top_7_categories, aes(x = reorder(Var1, Freq), y = Freq)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Top 7 Product Categories by Sales",
+       x = "Product Category",
+       y = "Number of Orders") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  coord_flip()
+```
+
+# Remove data with null values
+```{r}
+#data_customer <- na.omit(data_customer)
+#View(data_customer)
+```
+
+# Suponha que você queira verificar outliers na variável "total_paid"
+```{r}
+boxplot(data_customer$total_price, main="Boxplot of Total Paid")
+```
+
+# Outlier
+```{r}
+# identify
+outliers <- data_customer$total_price > 7500
+# Excluding
+data_customer <- data_customer[!outliers, ]
+#boxplot
+boxplot(data_customer$total_price, main="Boxplot of Total Paid")
+```
+
+
+
