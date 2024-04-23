@@ -15,10 +15,10 @@ data_customer_segmentation <- data_customer_cutoff %>%
   summarise(count_orders = n(),
             max_purchase = max(order_purchase_timestamp),
             total_paid = sum(total_payment),
-            credit = sum(credit),
-            boleto = sum(boleto),
-            debit = sum(debit),
-            voucher = sum(voucher)) %>%
+            credit = max(credit),
+            boleto = max(boleto),
+            debit = max(debit),
+            voucher = max(voucher)) %>%
   arrange(max_purchase) %>%
   select(customer_unique_id, target, total_paid, count_orders, credit, boleto, debit, voucher, max_purchase)
 

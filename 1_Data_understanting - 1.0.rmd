@@ -130,18 +130,6 @@ data_product <- data_customer %>% inner_join(select(order_order_item, order_id, 
                   select(order_id, product_id, product_category_name)
 ```
 
-# Adicionar a coluna payment_type do dataset payment ao data frame data_customer
-```{r}
-# Agregar os dados de payment para garantir apenas uma linha por order_id
-payment_aggregated <- payment %>%
-                        group_by(order_id) %>%
-                        summarise(payment_type = first(payment_type))
-
-# Realizar a junção entre data_customer e payment_aggregated
-data_customer <- data_customer %>%
-                  inner_join(payment_aggregated, by = "order_id")
-```
-
 # Orders per weekday
 ```{r}
 orders_per_weekday <- data_customer %>%

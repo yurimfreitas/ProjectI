@@ -23,7 +23,6 @@ data_trainover <- ovun.sample(target_categorical ~ .,
 
 # Verificar a distribuição da classe após oversampling
 table(data_trainover$target_categorical)
-
 ```
 
 # Classification class distribution in full dataset

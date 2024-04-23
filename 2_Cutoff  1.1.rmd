@@ -38,6 +38,7 @@ data_customer <- subset(data_customer, select = -c(delivered_time, mean_delivere
 colSums(is.na(data_customer))
 ```
 
+
 # 2018 data and less than 2018 separated in two df
 ```{r}
 data_customer_cutoff_2018 <- data_customer %>%
@@ -52,6 +53,7 @@ data_customer_cutoff <- data_customer_cutoff_2016_2017
 # Create a new column in data_customer_cutoff
 data_customer_cutoff$target <- as.integer(data_customer_cutoff_2016_2017$customer_unique_id %in% data_customer_cutoff_2018$customer_unique_id)
 ```
+
 
 
 

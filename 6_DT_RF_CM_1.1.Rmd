@@ -24,22 +24,6 @@ cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
 
-# Applyin oversampling
-```{r}
-# Calcular o número de instâncias na classe majoritária
-num_majoritaria <- sum(data_customer_segmentation$target_categorical == "non.buyer")
-
-# Realizar oversampling
-oversampled_data <- ovun.sample(target_categorical ~ ., 
-                                data = data_customer_segmentation, 
-                                method = "over", 
-                                N = 65454,  # Um valor grande suficiente
-                                seed = 123)$data
-
-# Verificar a distribuição da classe após oversampling
-table(oversampled_data$target_categorical)
-```
-
 # Define train and test sets ----------------------------------------------
 ```{r}
 set.seed(123) 
@@ -74,7 +58,7 @@ control <- trainControl(method = "repeatedcv",
 seed <- 123
 set.seed(seed)
 model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                  data = data_customer_segmentation,
+                  data = data_train,
                   method = "rpart", # Decision Trees, with CART algorithm
                   metric = metric,
                   trControl = control)
