@@ -1,34 +1,34 @@
-
-# Applyin oversampling
-```{r}
-# Calcular o número de instâncias na classe majoritária
-num_majoritaria <- sum(data_customer_segmentation$target_categorical == "non.buyer")
-
-# Realizar oversampling
-oversampled_data <- ovun.sample(target_categorical ~ ., 
-                                data = data_customer_segmentation, 
-                                method = "over", 
-                                N = 65454,  # Um valor grande suficiente
-                                seed = 123)$data
-
-# Verificar a distribuição da classe após oversampling
-table(oversampled_data$target_categorical)
-
-```
-
 # Define train and test sets ----------------------------------------------
 ```{r}
 set.seed(123) 
-trainIndex <- createDataPartition(oversampled_data$target_categorical, p = .8, 
+trainIndexover <- createDataPartition(data_customer_segmentation$target_categorical, p = .8, 
                                   list = FALSE, 
                                   times = 1)
-data_testover <- oversampled_data[-trainIndex, ]
-data_trainover <- oversampled_data[trainIndexover, ]
+data_testover <- data_customer_segmentation[-trainIndexover, ]
+data_trainover <- data_customer_segmentation[trainIndexover, ]
+```
+
+# Applyin oversampling
+```{r}
+table(data_trainover$target_categorical)
+# Calcular o número de instâncias na classe majoritária
+num_majoritaria <- sum(data_trainover$target_categorical == "non.buyer")
+
+# Realizar oversampling
+data_trainover <- ovun.sample(target_categorical ~ ., 
+                                data = data_trainover, 
+                                method = "over", 
+                                N = 38000,  # Um valor grande suficiente
+                                seed = 123)$data
+
+# Verificar a distribuição da classe após oversampling
+table(data_trainover$target_categorical)
+
 ```
 
 # Classification class distribution in full dataset
 ```{r}
-freq_table <- table(oversampled_data$target_categorical)
+freq_table <- table(data_trainover$target_categorical)
 cbind(Frequency = freq_table,
       Proportion = round(prop.table(freq_table), 3))
 ```
@@ -52,7 +52,7 @@ control <- trainControl(method = "repeatedcv",
 seed <- 123
 set.seed(seed)
 model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                  data = oversampled_data,
+                  data = data_trainover,
                   method = "rpart", # Decision Trees, with CART algorithm
                   metric = metric,
                   trControl = control)
@@ -63,7 +63,7 @@ gc()
 ```{r}
 set.seed(seed)
 model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                  data = oversampled_data,
+                  data = data_trainover,
                   method = "rf",  # Random Forests
                   metric = metric,
                   trControl = control)

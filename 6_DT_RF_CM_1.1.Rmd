@@ -47,7 +47,7 @@ trainIndex <- createDataPartition(data_customer_segmentation$target_categorical,
                                   list = FALSE, 
                                   times = 1)
 data_test <- data_customer_segmentation[-trainIndex, ]
-data_trainover <- data_customer_segmentation[trainIndexover, ]
+data_train <- data_customer_segmentation[trainIndex, ]
 ```
 
 # Classification class distribution in full dataset
@@ -85,7 +85,7 @@ gc()
 ```{r}
 set.seed(seed)
 model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                  data = data_trainover,
+                  data = data_train,
                   method = "rf",  # Random Forests
                   metric = metric,
                   trControl = control)
@@ -137,7 +137,7 @@ tune_grid <- expand.grid(mtry = c(2, 3, 4))
 
 set.seed(seed)
 model_RF_tuned <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
-                       data = data_trainover,
+                       data = data_train,
                        method = "rf",
                        metric = metric,
                        trControl = control,
@@ -179,7 +179,8 @@ head(cbind(predictions_prob, predictions_raw))
 # Confusion Matrix
 ```{r}
 confusionMatrix(data = predictions_raw,
-                reference = data_test$target_categorical)
+                reference = data_test$target_categorical,
+                mode = "everything")
                 # Tip: use the following argument for more metrics
                 #   mode = "everything"
                 # Note that:
