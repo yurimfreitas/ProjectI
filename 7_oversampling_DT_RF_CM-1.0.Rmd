@@ -154,7 +154,8 @@ head(cbind(predictions_prob, predictions_raw))
 # Confusion Matrix
 ```{r}
 confusionMatrix(data = predictions_raw,
-                reference = data_testover$target_categorical)
+                reference = data_testover$target_categorical,
+                mode = "everything")
                 # Tip: use the following argument for more metrics
                 #   mode = "everything"
                 # Note that:
