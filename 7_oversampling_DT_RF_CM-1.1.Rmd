@@ -51,7 +51,7 @@ control <- trainControl(method = "repeatedcv",
 ```{r}
 seed <- 123
 set.seed(seed)
-model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
+model_DT <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster + credit + boleto + debit + voucher ,
                   data = data_trainover,
                   method = "rpart", # Decision Trees, with CART algorithm
                   metric = metric,
@@ -62,7 +62,7 @@ gc()
 # Learn Random Forest (rf)
 ```{r}
 set.seed(seed)
-model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
+model_RF <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster + credit + boleto + debit + voucher ,
                   data = data_trainover,
                   method = "rf",  # Random Forests
                   metric = metric,
@@ -114,7 +114,7 @@ plot(model_RF, main = "Random Forest")
 tune_grid <- expand.grid(mtry = c(2, 3, 4))
 
 set.seed(seed)
-model_RF_tuned <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster ,
+model_RF_tuned <- train(target_categorical ~ monetary_cluster + frequency_cluster + recency_cluster + credit + boleto + debit + voucher ,
                        data = data_trainover,
                        method = "rf",
                        metric = metric,
